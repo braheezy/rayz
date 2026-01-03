@@ -6,7 +6,10 @@ const platform = @import("platform");
 
 const color = @import("color.zig");
 const Vec3 = @import("vec3.zig");
-const Ray = @import("ray.zig");
+const Ray = @import("Ray.zig");
+const hit = @import("hit.zig");
+const Sphere = @import("Sphere.zig");
+const Interval = @import("Interval.zig");
 
 pub fn main() !void {
     var debug_allocator: std.heap.DebugAllocator(.{}) = .init;
@@ -43,6 +46,11 @@ pub fn main() !void {
     const viewport_upper_left = camera_center.sub(Vec3.init(0, 0, focal_length)).sub(viewport_u.div(2)).sub(viewport_v.div(2));
     const pixel00_loc = viewport_upper_left.add(pixel_delta_u.add(pixel_delta_v).mul(0.5));
 
+    var world: hit.List = .{};
+    try world.add(allocator, &Sphere.init(Vec3.init(0, 0, -1), 0.5).hittable);
+    try world.add(allocator, &Sphere.init(Vec3.init(0, -100.5, -1), 100).hittable);
+    defer world.free(allocator);
+
     var out_buffer: [1 << 8]u8 = undefined;
     const out_file = try std.fs.cwd().createFile("out.ppm", .{});
     defer out_file.close();
@@ -66,7 +74,7 @@ pub fn main() !void {
             const pixel_center = pixel00_loc.add(pixel_delta_u.mul(i_f)).add(pixel_delta_v.mul(j_f));
             const ray_direction = pixel_center.sub(camera_center);
             const ray = Ray.init(camera_center, ray_direction);
-            const pixel_color = rayColor(ray);
+            const pixel_color = rayColor(ray, &world.hittable);
 
             // Write to file
             try color.writePPM(writer, pixel_color);
@@ -91,12 +99,12 @@ pub fn main() !void {
     try run(window, pixels);
 }
 
-fn rayColor(r: Ray) Vec3 {
-    const t = hitSphere(Vec3.init(0, 0, -1), 0.5, r);
-    if (t > 0.0) {
-        const N = r.at(t).sub(Vec3.init(0, 0, -1)).unit();
-        return Vec3.init(N.x() + 1, N.y() + 1, N.z() + 1).mul(0.5);
+fn rayColor(r: Ray, world: *const hit.Hittable) Vec3 {
+    var rec: hit.Record = undefined;
+    if (world.hit(r, Interval.init(0.0, std.math.inf(f64)), &rec)) {
+        return rec.normal.add(Vec3.init(1, 1, 1)).mul(0.5);
     }
+
     const unit_dir = r.direction.unit();
     const a = 0.5 * (unit_dir.y() + 1.0);
     return Vec3.fromScalar(1).mul(1.0 - a).add(Vec3.init(0.5, 0.7, 1.0).mul(a));
