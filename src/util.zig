@@ -19,5 +19,5 @@ pub fn random() f64 {
 }
 
 pub fn randomInRange(min: f64, max: f64) f64 {
-    return min + (max - min) + random();
+    return min + (max - min) * random();
 }

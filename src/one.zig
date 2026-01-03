@@ -5,7 +5,7 @@ const builtin = @import("builtin");
 const platform = @import("platform");
 
 const color = @import("color.zig");
-const Vec3 = @import("vec3.zig");
+const Vec3 = @import("Vec3.zig");
 const hit = @import("hit.zig");
 const Sphere = @import("Sphere.zig");
 const Camera = @import("Camera.zig");
@@ -39,6 +39,7 @@ pub fn main() !void {
     camera.aspect_ratio = 16.0 / 9.0;
     camera.image_width = 800;
     camera.samples_per_pixel = 100;
+    camera.max_depth = 50;
     try camera.render(&world.hittable);
 
     // Create platform context

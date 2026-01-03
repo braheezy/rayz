@@ -1,4 +1,4 @@
-const Vec3 = @import("vec3.zig");
+const Vec3 = @import("Vec3.zig");
 const Ray = @import("Ray.zig");
 const hit = @import("hit.zig");
 const Interval = @import("Interval.zig");

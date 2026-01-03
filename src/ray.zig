@@ -1,4 +1,4 @@
-const Vec3 = @import("vec3.zig");
+const Vec3 = @import("Vec3.zig");
 
 pub const Ray = @This();
 

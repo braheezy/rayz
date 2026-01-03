@@ -3,7 +3,7 @@ const std = @import("std");
 const color = @import("color.zig");
 const hit = @import("hit.zig");
 const Ray = @import("Ray.zig");
-const Vec3 = @import("vec3.zig");
+const Vec3 = @import("Vec3.zig");
 const Interval = @import("Interval.zig");
 const platform = @import("platform");
 const util = @import("util.zig");
@@ -31,6 +31,8 @@ pixel_delta_v: Vec3 = Vec3.zero,
 samples_per_pixel: u32 = 10,
 // Color scale factor for a sum of pixel samples
 pixel_samples_scale: f64 = 1.0,
+// Maximum number of ray bounces into scene
+max_depth: u32 = 10,
 
 pub fn init(allocator: std.mem.Allocator) !*Camera {
     const cam = try allocator.create(Camera);
@@ -62,13 +64,14 @@ pub fn render(self: *Camera, world: *const hit.Hittable) !void {
     // Allocate framebuffer for pixels
     self.pixels = try self.allocator.alloc(platform.util.BGRA, width * height);
 
+    const start = std.time.nanoTimestamp();
     for (0..height) |j| {
         std.debug.print("\rScanlines remaining: {d} ", .{height - j});
         for (0..width) |i| {
             var pixel_color = Vec3.zero;
             for (0..self.samples_per_pixel) |_| {
                 const r = self.getRay(i, j);
-                pixel_color = pixel_color.add(rayColor(r, world));
+                pixel_color = pixel_color.add(rayColor(r, self.max_depth, world));
             }
             pixel_color = pixel_color.mul(self.pixel_samples_scale);
 
@@ -80,6 +83,9 @@ pub fn render(self: *Camera, world: *const hit.Hittable) !void {
             self.pixels[j * width + i] = color.bytesToBGRA(bytes);
         }
     }
+    const elapsed_ns = std.time.nanoTimestamp() - start;
+    const elapsed_s = @as(f64, @floatFromInt(elapsed_ns)) / std.time.ns_per_s;
+    std.debug.print("\nRender time: {d:.3} s\n", .{elapsed_s});
 
     try writer.flush();
 
@@ -111,15 +117,18 @@ fn initialize(self: *Camera) void {
     self.pixel00_loc = viewport_upper_left.add(self.pixel_delta_u.add(self.pixel_delta_v).mul(0.5));
 }
 
-fn rayColor(ray: Ray, world: *const hit.Hittable) Vec3 {
+fn rayColor(ray: Ray, depth: u32, world: *const hit.Hittable) Vec3 {
+    // If we've exceeded the ray bounce limit, no more light is gathered.
+    if (depth <= 0) return Vec3.zero;
     var rec: hit.Record = undefined;
-    if (world.hit(ray, Interval.init(0.0, std.math.inf(f64)), &rec)) {
-        return rec.normal.add(Vec3.init(1, 1, 1)).mul(0.5);
+    if (world.hit(ray, Interval.init(0.001, std.math.inf(f64)), &rec)) {
+        const direction = rec.normal.add(Vec3.initRandomUnitVector());
+        return rayColor(Ray.init(rec.point, direction), depth - 1, world).mul(0.1);
     }
 
     const unit_dir = ray.direction.unit();
     const a = 0.5 * (unit_dir.y() + 1.0);
-    return Vec3.fromScalar(1).mul(1.0 - a).add(Vec3.init(0.5, 0.7, 1.0).mul(a));
+    return Vec3.initFromScalar(1).mul(1.0 - a).add(Vec3.init(0.5, 0.7, 1.0).mul(a));
 }
 
 fn getRay(self: *Camera, i: usize, j: usize) Ray {

@@ -3,7 +3,7 @@ const builtin = @import("builtin");
 const platform = @import("platform");
 const util = platform.util;
 
-const Vec3 = @import("vec3.zig");
+const Vec3 = @import("Vec3.zig");
 const zero_vec3 = Vec3.zero;
 
 const MAX_RAY_DEPTH = 5;
@@ -73,7 +73,7 @@ pub fn main() !void {
         Vec3.init(0.00, 0.00, 0.00),
         0,
         0.0,
-        Vec3.fromScalar(3),
+        Vec3.initFromScalar(3),
     ));
 
     // Create window and display raytraced image
@@ -233,7 +233,7 @@ fn trace(rayorig: Vec3, raydir: Vec3, spheres: std.ArrayList(Sphere), depth: i32
         }
         return surface_color.add(sp.emission_color);
     } else {
-        return Vec3.fromScalar(2);
+        return Vec3.initFromScalar(2);
     }
 }
 
