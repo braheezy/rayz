@@ -9,6 +9,7 @@ const Vec3 = @import("vec3.zig");
 const hit = @import("hit.zig");
 const Sphere = @import("Sphere.zig");
 const Camera = @import("Camera.zig");
+const util = @import("util.zig");
 
 pub fn main() !void {
     var debug_allocator: std.heap.DebugAllocator(.{}) = .init;
@@ -26,6 +27,8 @@ pub fn main() !void {
         }
     };
 
+    util.init();
+
     var world: hit.List = .{};
     try world.add(allocator, &Sphere.init(Vec3.init(0, 0, -1), 0.5).hittable);
     try world.add(allocator, &Sphere.init(Vec3.init(0, -100.5, -1), 100).hittable);
@@ -35,6 +38,7 @@ pub fn main() !void {
     defer camera.deinit();
     camera.aspect_ratio = 16.0 / 9.0;
     camera.image_width = 800;
+    camera.samples_per_pixel = 100;
     try camera.render(&world.hittable);
 
     // Create platform context
@@ -48,19 +52,12 @@ pub fn main() !void {
     try run(window, camera.pixels);
 }
 
-fn run(window: *platform.Window, pixels: []const Vec3) !void {
+fn run(window: *platform.Window, pixels: []platform.util.BGRA) !void {
     // Get platform-specific window to access framebuffer
     const plat_window = @as(*platform.platform.Window, @ptrCast(@alignCast(window._window)));
     const framebuffer = try plat_window.getRAMFrameBuffer();
 
-    // Convert framebuffer BGRA slice to bytes for writing
-    const framebuffer_bytes = std.mem.sliceAsBytes(framebuffer);
-    var fb_writer = std.Io.Writer.fixed(framebuffer_bytes);
-
-    // Write all pixels to framebuffer using IO writer
-    for (pixels) |pixel| {
-        try color.writeBGRA(&fb_writer, pixel);
-    }
+    @memcpy(framebuffer, pixels);
 
     // Initial blit to display the image
     try plat_window.blitFrame();
