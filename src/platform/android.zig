@@ -1,4 +1,3 @@
-
 pub const c = @cImport({
     @cInclude("android/native_activity.h");
     @cInclude("android/configuration.h");

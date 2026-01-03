@@ -1,6 +1,6 @@
 const std = @import("std");
 const platform = @import("platform.zig");
-const util = @import("../util.zig");
+const util = @import("util.zig");
 
 // Import low-level Cocoa/CoreGraphics bindings
 pub const c = @import("macos/cocoa.zig");
@@ -312,6 +312,11 @@ pub const Window = struct {
     fn processEvents(self: *Self) !void {
         const ctx = self.context;
 
+        // Create an autorelease pool to manage Cocoa's autoreleased objects
+        const pool: id = c.NSAutoreleasePool().msgSend(id, sel("alloc"), .{});
+        _ = obj(pool).msgSend(id, sel("init"), .{});
+        defer _ = obj(pool).msgSend(void, sel("drain"), .{});
+
         // Process all pending events
         const distant_past: id = c.NSDate().msgSend(id, sel("distantPast"), .{});
 
@@ -330,6 +335,13 @@ pub const Window = struct {
 
             // Check if event is for this window
             if (@intFromPtr(window_id) == 0 or window_id != self.ns_window) {
+                _ = obj(ctx.app).msgSend(void, sel("sendEvent:"), .{event_id});
+                continue;
+            }
+
+            // Skip processing events if window is no longer visible (being closed/destroyed)
+            const is_visible: i8 = obj(self.ns_window).msgSend(i8, sel("isVisible"), .{});
+            if (is_visible == 0) {
                 _ = obj(ctx.app).msgSend(void, sel("sendEvent:"), .{event_id});
                 continue;
             }
@@ -459,35 +471,25 @@ pub const Window = struct {
         } else {
             var mapping = platform.KeyMapping.none;
 
-            const chars: ?id = obj(event).msgSend(?id, sel("characters"), .{});
-            if (chars) |ch| {
-                const length: c_ulong = obj(ch).msgSend(c_ulong, sel("length"), .{});
-                if (length > 0) {
-                    const char_code: u16 = obj(ch).msgSend(u16, sel("characterAtIndex:"), .{@as(c_ulong, 0)});
-                    if (char_code < 128 and !std.ascii.isControl(@intCast(char_code))) {
-                        var utf8: [4]u8 = .{ 0, 0, 0, 0 };
-                        utf8[0] = @intCast(char_code);
-                        mapping = platform.KeyMapping.utf8(utf8);
-                    } else {
-                        mapping = switch (char_code) {
-                            0x1B => platform.KeyMapping.action(.escape),
-                            0x09 => platform.KeyMapping.action(.tab),
-                            0x7F, 0x08 => platform.KeyMapping.action(.backspace),
-                            0x0D => platform.KeyMapping.action(.enter),
-                            0xF728 => platform.KeyMapping.action(.delete),
-                            0xF729 => platform.KeyMapping.action(.home),
-                            0xF72B => platform.KeyMapping.action(.end),
-                            0xF72C => platform.KeyMapping.action(.page_up),
-                            0xF72D => platform.KeyMapping.action(.page_down),
-                            0xF700 => platform.KeyMapping.action(.up),
-                            0xF701 => platform.KeyMapping.action(.down),
-                            0xF702 => platform.KeyMapping.action(.left),
-                            0xF703 => platform.KeyMapping.action(.right),
-                            else => platform.KeyMapping.none,
-                        };
-                    }
-                }
-            }
+            // Map based on key code for special keys (more reliable than accessing event.characters)
+            // For letter/number keys, we map using the key code directly to avoid crashes
+            // during window teardown when event.characters may be invalid
+            mapping = switch (key) {
+                .esc => platform.KeyMapping.action(.escape),
+                .tab => platform.KeyMapping.action(.tab),
+                .backspace => platform.KeyMapping.action(.backspace),
+                .enter => platform.KeyMapping.action(.enter),
+                .delete => platform.KeyMapping.action(.delete),
+                .home => platform.KeyMapping.action(.home),
+                .end => platform.KeyMapping.action(.end),
+                .page_up => platform.KeyMapping.action(.page_up),
+                .page_down => platform.KeyMapping.action(.page_down),
+                .up => platform.KeyMapping.action(.up),
+                .down => platform.KeyMapping.action(.down),
+                .left => platform.KeyMapping.action(.left),
+                .right => platform.KeyMapping.action(.right),
+                else => platform.KeyMapping.none,
+            };
 
             if (self.findKeyDown(key) != null) {
                 try self.addEvent(platform.Event.key_repeat(.{

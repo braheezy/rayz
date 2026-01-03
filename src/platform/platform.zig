@@ -1,7 +1,7 @@
 const std = @import("std");
 const builtin = @import("builtin");
 
-const util = @import("../util.zig");
+pub const util = @import("util.zig");
 
 pub const PlatformName = enum(u8) {
     android = 0,
@@ -70,7 +70,8 @@ pub const Context = struct {
     set_clipboard_fn: *const fn (*anyopaque, contents: []const Content) anyerror!void,
     clear_clipboard_fn: *const fn (*anyopaque) anyerror!void,
 
-    pub fn create() !*Self {
+    pub fn create(gpa: std.mem.Allocator) !*Self {
+        util.gpa = gpa;
         const self = try util.gpa.create(Self);
         errdefer util.gpa.destroy(self);
         self.* = switch (name) {

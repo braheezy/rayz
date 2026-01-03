@@ -1,21 +1,26 @@
-
 const std = @import("std");
-const util = @import("../../util.zig");
+const util = @import("../util.zig");
 
 pub fn devMake(major: u32, minor: u32) std.posix.dev_t {
-    if (util.debug) { util.assert(std.posix.dev_t == u64); }
+    if (util.debug) {
+        util.assert(std.posix.dev_t == u64);
+    }
     const _major: std.posix.dev_t = major;
     const _minor: std.posix.dev_t = minor;
     return ((_major & 0xFFFFF000) << 32) | ((_major & 0x00000FFF) << 8) | ((_minor & 0xFFFFFF00) << 12) | (_minor & 0x000000FF);
 }
 
 pub fn devMajor(dev: std.posix.dev_t) u32 {
-    if (util.debug) { util.assert(std.posix.dev_t == u64); }
+    if (util.debug) {
+        util.assert(std.posix.dev_t == u64);
+    }
     return @as(u32, @intCast((dev >> 32) & 0xFFFFF000)) | @as(u32, @intCast((dev >> 8) & 0x00000FFF));
 }
 
 pub fn devMinor(dev: std.posix.dev_t) u32 {
-    if (util.debug) { util.assert(std.posix.dev_t == u64); }
+    if (util.debug) {
+        util.assert(std.posix.dev_t == u64);
+    }
     return @as(u32, @intCast((dev >> 12) & 0xFFFFFF00)) | @as(u32, @intCast(dev & 0x000000FF));
 }
 
@@ -158,7 +163,7 @@ pub const Format = enum(u32) {
 
     fn fourCCCode(c: *const [4]u8) u32 {
         // assumes little endian
-        return @as(*const u32, @alignCast(@ptrCast(c))).*;
+        return @as(*const u32, @ptrCast(@alignCast(c))).*;
     }
 };
 
@@ -244,10 +249,10 @@ fn DRM_FORMAT_MOD_NVIDIA_BLOCK_LINEAR_2D(c: comptime_int, s: comptime_int, g: co
 }
 
 inline fn drmFourCCCanonicalizeNvidiaFormatMod(modifier: u64) u64 {
-	if (!(modifier & 0x10) || (modifier & (0xff << 12))) {
-		return modifier;
+    if (!(modifier & 0x10) || (modifier & (0xff << 12))) {
+        return modifier;
     } else {
-		return modifier | (0xfe << 12);
+        return modifier | (0xfe << 12);
     }
 }
 
@@ -303,12 +308,12 @@ const AFBC_FORMAT_MOD_BLOCK_SIZE_32x8 = (2);
 const AFBC_FORMAT_MOD_BLOCK_SIZE_64x4 = (3);
 const AFBC_FORMAT_MOD_BLOCK_SIZE_32x8_64x4 = (4);
 
-const AFBC_FORMAT_MOD_YTR = (1 <<  4);
-const AFBC_FORMAT_MOD_SPLIT = (1 <<  5);
-const AFBC_FORMAT_MOD_SPARSE = (1 <<  6);
-const AFBC_FORMAT_MOD_CBR = (1 <<  7);
-const AFBC_FORMAT_MOD_TILED = (1 <<  8);
-const AFBC_FORMAT_MOD_SC = (1 <<  9);
+const AFBC_FORMAT_MOD_YTR = (1 << 4);
+const AFBC_FORMAT_MOD_SPLIT = (1 << 5);
+const AFBC_FORMAT_MOD_SPARSE = (1 << 6);
+const AFBC_FORMAT_MOD_CBR = (1 << 7);
+const AFBC_FORMAT_MOD_TILED = (1 << 8);
+const AFBC_FORMAT_MOD_SC = (1 << 9);
 const AFBC_FORMAT_MOD_DB = (1 << 10);
 const AFBC_FORMAT_MOD_BCH = (1 << 11);
 const AFBC_FORMAT_MOD_USM = (1 << 12);
@@ -324,8 +329,12 @@ const AFRC_FORMAT_MOD_CU_SIZE_16 = (1);
 const AFRC_FORMAT_MOD_CU_SIZE_24 = (2);
 const AFRC_FORMAT_MOD_CU_SIZE_32 = (3);
 
-fn AFRC_FORMAT_MOD_CU_SIZE_P0(__afrc_cu_size: comptime_int) comptime_int { return (__afrc_cu_size); }
-fn AFRC_FORMAT_MOD_CU_SIZE_P12(__afrc_cu_size: comptime_int) comptime_int { return ((__afrc_cu_size) << 4); }
+fn AFRC_FORMAT_MOD_CU_SIZE_P0(__afrc_cu_size: comptime_int) comptime_int {
+    return (__afrc_cu_size);
+}
+fn AFRC_FORMAT_MOD_CU_SIZE_P12(__afrc_cu_size: comptime_int) comptime_int {
+    return ((__afrc_cu_size) << 4);
+}
 
 const AFRC_FORMAT_MOD_LAYOUT_SCAN = (1 << 8);
 

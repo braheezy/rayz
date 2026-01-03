@@ -4,18 +4,25 @@ pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
 
-    const root_mod = b.createModule(.{
-        .root_source_file = b.path("src/main.zig"),
+    const basic_mod = b.createModule(.{
+        .root_source_file = b.path("src/basic.zig"),
         .target = target,
         .optimize = optimize,
     });
-
-    const exe = b.addExecutable(.{
-        .name = "rayz",
-        .root_module = root_mod,
+    const one_mod = b.createModule(.{
+        .root_source_file = b.path("src/one.zig"),
+        .target = target,
+        .optimize = optimize,
     });
-
     const target_os = target.result.os.tag;
+
+    const platform_mod = b.createModule(.{
+        .root_source_file = b.path("src/platform/platform.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    basic_mod.addImport("platform", platform_mod);
+    one_mod.addImport("platform", platform_mod);
 
     if (target_os == .macos) {
         // Add zig-objc dependency for macOS
@@ -23,24 +30,39 @@ pub fn build(b: *std.Build) void {
             .target = target,
             .optimize = optimize,
         });
-        root_mod.addImport("objc", objc_dep.module("objc"));
+        platform_mod.addImport("objc", objc_dep.module("objc"));
 
         // Link required macOS frameworks
-        root_mod.linkFramework("AppKit", .{});
-        root_mod.linkFramework("CoreGraphics", .{});
-        root_mod.linkFramework("QuartzCore", .{});
+        platform_mod.linkFramework("AppKit", .{});
+        platform_mod.linkFramework("CoreGraphics", .{});
+        platform_mod.linkFramework("QuartzCore", .{});
     }
 
-    b.installArtifact(exe);
+    const basic_exe = b.addExecutable(.{
+        .name = "basic",
+        .root_module = basic_mod,
+    });
 
-    const run_step = b.step("run", "Run the app");
+    b.installArtifact(basic_exe);
 
-    const run_cmd = b.addRunArtifact(exe);
-    run_step.dependOn(&run_cmd.step);
+    const basic_run_step = b.step("basic", "Run basic example");
 
-    run_cmd.step.dependOn(b.getInstallStep());
+    const basic_run_cmd = b.addRunArtifact(basic_exe);
+    basic_run_step.dependOn(&basic_run_cmd.step);
 
-    if (b.args) |args| {
-        run_cmd.addArgs(args);
-    }
+    basic_run_cmd.step.dependOn(b.getInstallStep());
+
+    const one_exe = b.addExecutable(.{
+        .name = "one",
+        .root_module = one_mod,
+    });
+
+    b.installArtifact(one_exe);
+
+    const one_run_step = b.step("one", "Run one example");
+
+    const one_run_cmd = b.addRunArtifact(one_exe);
+    one_run_step.dependOn(&one_run_cmd.step);
+
+    one_run_cmd.step.dependOn(b.getInstallStep());
 }

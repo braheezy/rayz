@@ -1,6 +1,5 @@
-
 const std = @import("std");
-const util = @import("../../util.zig");
+const util = @import("../util.zig");
 const platform = @import("../platform.zig");
 const wl = @import("wayland_wire.zig");
 const drm = @import("drm.zig");
@@ -176,7 +175,9 @@ pub const Context = struct {
     }
 
     pub fn destroy(self: *Self) void {
-        if (util.debug) { util.assert(self.windows.items.len == 0); }
+        if (util.debug) {
+            util.assert(self.windows.items.len == 0);
+        }
         self.windows.deinit(util.gpa);
         self.destroyPointer();
         self.destroyKeyboard();
@@ -214,13 +215,21 @@ pub const Context = struct {
     }
 
     pub fn initWindowStuff(self: *Self) !void {
-        if (util.debug) { util.assert(self.wl_compositor == null and self.xdg_wm_base == null); }
+        if (util.debug) {
+            util.assert(self.wl_compositor == null and self.xdg_wm_base == null);
+        }
 
         self.wl_compositor = try self.getInterface(wp.wl_compositor, null, self);
-        errdefer { self.wl_compositor.?.destroyLocally(); self.wl_compositor = null; }
+        errdefer {
+            self.wl_compositor.?.destroyLocally();
+            self.wl_compositor = null;
+        }
 
         self.xdg_wm_base = try self.getInterface(wp.xdg_wm_base, null, self);
-        errdefer { self.xdg_wm_base.?.destroyLocally(); self.xdg_wm_base = null; }
+        errdefer {
+            self.xdg_wm_base.?.destroyLocally();
+            self.xdg_wm_base = null;
+        }
 
         self.xdg_decoration_manager = self.getInterface(wp.zxdg_decoration_manager_v1, null, self) catch |err| blk: {
             switch (err) {
@@ -228,9 +237,11 @@ pub const Context = struct {
                 else => return err,
             }
         };
-        errdefer { if (self.xdg_decoration_manager != null) {
-            self.xdg_decoration_manager.?.destroy() catch {};
-        } }
+        errdefer {
+            if (self.xdg_decoration_manager != null) {
+                self.xdg_decoration_manager.?.destroy() catch {};
+            }
+        }
 
         self.wl_shm = self.getInterface(wp.wl_shm, null, self) catch |err| blk: {
             if (err == error.MissingInterface) {
@@ -238,7 +249,12 @@ pub const Context = struct {
             }
             return err;
         };
-        errdefer { if (self.wl_shm != null) { self.wl_shm.?.destroyLocally(); self.wl_shm = null; } }
+        errdefer {
+            if (self.wl_shm != null) {
+                self.wl_shm.?.destroyLocally();
+                self.wl_shm = null;
+            }
+        }
 
         self.zwp_linux_dmabuf = self.getInterface(wp.zwp_linux_dmabuf_v1, null, self) catch |err| blk: {
             if (err == error.MissingInterface) {
@@ -246,7 +262,12 @@ pub const Context = struct {
             }
             return err;
         };
-        errdefer { if (self.zwp_linux_dmabuf != null) { self.zwp_linux_dmabuf.?.destroy() catch {}; self.zwp_linux_dmabuf = null; } }
+        errdefer {
+            if (self.zwp_linux_dmabuf != null) {
+                self.zwp_linux_dmabuf.?.destroy() catch {};
+                self.zwp_linux_dmabuf = null;
+            }
+        }
 
         self.wl_seat = self.getInterface(wp.wl_seat, null, self) catch |err| blk: {
             if (err == error.MissingInterface) {
@@ -294,7 +315,9 @@ pub const Context = struct {
         var interface: ?*Global = null;
         for (self.globals.items) |*g| {
             if (std.mem.eql(u8, g.interface, interface_name)) {
-                if (util.debug) { util.assert(interface == null); }
+                if (util.debug) {
+                    util.assert(interface == null);
+                }
                 interface = g;
             }
         }
@@ -338,7 +361,7 @@ pub const Context = struct {
     }
 
     fn shmFormat(_self: ?*anyopaque, format: wp.wl_shm.e_format) anyerror!void {
-        const self: *Self = @alignCast(@ptrCast(_self));
+        const self: *Self = @ptrCast(@alignCast(_self));
         try self.shm_formats.append(util.gpa, format);
     }
 
@@ -439,7 +462,9 @@ pub const Context = struct {
     fn wlPointerLeave(_self: ?*anyopaque, serial: u32, surface: *wp.wl_surface) anyerror!void {
         const self = castSelf(_self);
         _ = serial;
-        if (util.debug) { util.assert(self.pointer_focus != null and self.pointer_focus.?.wl_surface == surface); }
+        if (util.debug) {
+            util.assert(self.pointer_focus != null and self.pointer_focus.?.wl_surface == surface);
+        }
         try self.pointer_focus.?.pointerLeave();
         self.pointer_focus = null;
     }
@@ -558,14 +583,16 @@ pub const Context = struct {
             return error.KeyArrayValueError;
         }
         self.keys_down.clearRetainingCapacity();
-        try self.keys_down.appendSlice(util.gpa, @as([*]const u32, @ptrCast(keys.ptr))[0..keys.len / 4]);
+        try self.keys_down.appendSlice(util.gpa, @as([*]const u32, @ptrCast(keys.ptr))[0 .. keys.len / 4]);
         util.gpa.free(keys);
     }
 
     fn wlKeyboardLeave(_self: ?*anyopaque, serial: u32, surface: *wp.wl_surface) anyerror!void {
         const self = castSelf(_self);
         _ = serial;
-        if (util.debug) { util.assert(self.keyboard_focus != null and self.keyboard_focus.?.wl_surface == surface); }
+        if (util.debug) {
+            util.assert(self.keyboard_focus != null and self.keyboard_focus.?.wl_surface == surface);
+        }
         self.keyboard_focus = null;
         self.keys_down.clearRetainingCapacity();
     }
@@ -638,7 +665,7 @@ pub const Context = struct {
         }
         const repeat_rate = if (self.repeat_rate > 0) self.repeat_rate else 100;
         const new_count = @as(u32, @intCast(time_passed)) / repeat_rate + 1;
-        const delta = @min(new_count-self.repeat_count, 100);
+        const delta = @min(new_count - self.repeat_count, 100);
         const modifiers = self.keyboardGetModifiers();
         for (0..delta) |_| {
             try self.keyboard_focus.?.keyboardKeyRepeat(
@@ -684,20 +711,28 @@ pub const Context = struct {
 
     fn wlTouchDown(_self: ?*anyopaque, serial: u32, time: u32, surface: *wp.wl_surface, id: i32, x: f32, y: f32) anyerror!void {
         const self = castSelf(_self);
-        _ = time; _ = surface; _ = id; _ = x; _ = y;
+        _ = time;
+        _ = surface;
+        _ = id;
+        _ = x;
+        _ = y;
         self.last_input_serial = serial;
     }
 
     fn wlTouchUp(_self: ?*anyopaque, serial: u32, time: u32, id: i32) anyerror!void {
         const self = castSelf(_self);
-        _ = time; _ = id;
+        _ = time;
+        _ = id;
         self.last_input_serial = serial;
     }
 
     fn wlTouchMotion(_self: ?*anyopaque, time: u32, id: i32, x: f32, y: f32) anyerror!void {
         const self = castSelf(_self);
         _ = self;
-        _ = time; _ = id; _ = x; _ = y;
+        _ = time;
+        _ = id;
+        _ = x;
+        _ = y;
     }
 
     fn wlTouchFrame(_self: ?*anyopaque) anyerror!void {
@@ -713,12 +748,15 @@ pub const Context = struct {
     fn wlTouchShape(_self: ?*anyopaque, id: i32, major: f32, minor: f32) anyerror!void {
         const self = castSelf(_self);
         _ = self;
-        _ = id; _ = major; _ = minor;
+        _ = id;
+        _ = major;
+        _ = minor;
     }
 
     fn wlTouchOrientation(_self: ?*anyopaque, id: i32, orientation: f32) anyerror!void {
         const self = castSelf(_self);
-        _ = id; _ = orientation;
+        _ = id;
+        _ = orientation;
         _ = self;
     }
 
@@ -748,7 +786,11 @@ pub const Context = struct {
         // TODO: drag and drop
         const self = castSelf(_self);
         _ = self;
-        _ = serial; _ = surface; _ = x; _ = y; _ = data_offer;
+        _ = serial;
+        _ = surface;
+        _ = x;
+        _ = y;
+        _ = data_offer;
     }
 
     fn wlDataDeviceLeave(_self: ?*anyopaque) anyerror!void {
@@ -759,7 +801,9 @@ pub const Context = struct {
     fn wlDataDeviceMotion(_self: ?*anyopaque, time: u32, x: f32, y: f32) anyerror!void {
         const self = castSelf(_self);
         _ = self;
-        _ = time; _ = x; _ = y;
+        _ = time;
+        _ = x;
+        _ = y;
     }
 
     fn wlDataDeviceDrop(_self: ?*anyopaque) anyerror!void {
@@ -836,7 +880,7 @@ pub const Context = struct {
         std.posix.close(write_fd);
         const file = std.fs.File{ .handle = read_fd };
         var file_reader = file.reader(util.io, &.{});
-        return try file_reader.interface.allocRemaining(util.gpa, .limited(20 * 1024 * 1024 * 1024));  // 2GB
+        return try file_reader.interface.allocRemaining(util.gpa, .limited(20 * 1024 * 1024 * 1024)); // 2GB
     }
 
     fn destroyDataSource(self: *Self) void {
@@ -933,24 +977,26 @@ pub const Context = struct {
 
     fn clearClipboard(_self: *anyopaque) anyerror!void {
         const self = castSelf(_self);
-        if (util.debug) { util.assertMsg(self.wl_data_device_manager != null and self.data_device != null, "Window is required to set the clipboard"); }
+        if (util.debug) {
+            util.assertMsg(self.wl_data_device_manager != null and self.data_device != null, "Window is required to set the clipboard");
+        }
         self.destroyDataSource();
         // Plasma/kwin doesn't care
         //try self.data_device.?.set_selection(null, self.last_input_serial);
-        try setClipboard(self, &.{ .{ .data = "", .type = .text_utf8 } });
+        try setClipboard(self, &.{.{ .data = "", .type = .text_utf8 }});
     }
 
     inline fn castSelf(_self: ?*anyopaque) *Self {
-        return @alignCast(@ptrCast(_self.?));
+        return @ptrCast(@alignCast(_self.?));
     }
 };
 
 const Callback = struct {
     parent: *anyopaque,
-    done_fn: *const fn(?*anyopaque, u32) anyerror!void,
+    done_fn: *const fn (?*anyopaque, u32) anyerror!void,
 
     fn done(_self: ?*anyopaque, data: u32) anyerror!void {
-        const self: *Callback = @alignCast(@ptrCast(_self));
+        const self: *Callback = @ptrCast(@alignCast(_self));
         return self.done_fn(self.parent, data);
     }
 };
@@ -976,7 +1022,9 @@ const WaitingCallback = struct {
     }
 
     fn set(self: *Self, wl_callback: *wp.wl_callback) void {
-        if (util.debug) { util.assert(self.wl_callback == null); }
+        if (util.debug) {
+            util.assert(self.wl_callback == null);
+        }
         self.wl_callback = wl_callback;
     }
 
@@ -995,7 +1043,7 @@ const WaitingCallback = struct {
 
     fn done(_self: ?*anyopaque, data: u32) anyerror!void {
         _ = data;
-        const self: *Self = @alignCast(@ptrCast(_self.?));
+        const self: *Self = @ptrCast(@alignCast(_self.?));
         self.wl_callback = null;
         self.done_waiting = true;
     }
@@ -1003,7 +1051,7 @@ const WaitingCallback = struct {
 
 const ErrorCallback = struct {
     object_id: u32,
-    fun: *const fn(self: *Context, object_id: u32, code: u32, message: []const u8) anyerror!void,
+    fun: *const fn (self: *Context, object_id: u32, code: u32, message: []const u8) anyerror!void,
 };
 
 pub const Window = struct {
@@ -1024,7 +1072,7 @@ pub const Window = struct {
 
     shm_frame_buffers: ?*MemoryFrameBufferSet = null,
 
-    reconfigure_callback: ?*const fn(context: ?*anyopaque) anyerror!void = null,
+    reconfigure_callback: ?*const fn (context: ?*anyopaque) anyerror!void = null,
     reconfigure_callback_context: ?*anyopaque = null,
 
     frame_callback: ?Callback = null,
@@ -1112,7 +1160,9 @@ pub const Window = struct {
                 break;
             }
         } else {
-            if (util.debug) { util.assert(false); }
+            if (util.debug) {
+                util.assert(false);
+            }
         }
         if (self.feedback != null) {
             self.feedback.?.destroy();
@@ -1232,7 +1282,7 @@ pub const Window = struct {
         return try self.feedback.?.getConfigs();
     }
 
-    pub fn setReconfigureCallback(self: *Self, fun: fn(context: ?*anyopaque) anyerror!void, context: ?*anyopaque) !void {
+    pub fn setReconfigureCallback(self: *Self, fun: fn (context: ?*anyopaque) anyerror!void, context: ?*anyopaque) !void {
         self.reconfigure_callback = fun;
         self.reconfigure_callback_context = context;
     }
@@ -1268,7 +1318,7 @@ pub const Window = struct {
     }
 
     fn frameShouldRender(_self: ?*anyopaque, data: u32) anyerror!void {
-        const self: *Self = @alignCast(@ptrCast(_self));
+        const self: *Self = @ptrCast(@alignCast(_self));
         _ = data;
         if (self.frame_callback_callback != null) {
             try self.frame_callback_callback.?(self.frame_callback_user_ptr);
@@ -1319,7 +1369,7 @@ pub const Window = struct {
             .BTN_LEFT => .MouseLeft,
             .BTN_RIGHT => .MouseRight,
             .BTN_MIDDLE => .MouseMiddle,
-            else => return error.UnknownButton
+            else => return error.UnknownButton,
         };
     }
 
@@ -1346,13 +1396,13 @@ pub const Window = struct {
     }
 
     fn close(_self: ?*anyopaque) anyerror!void {
-        const self: *Self = @alignCast(@ptrCast(_self));
+        const self: *Self = @ptrCast(@alignCast(_self));
         try self.addEvent(.window_close());
     }
 
     fn xdgToplevelConfigure(_self: ?*anyopaque, width: i32, height: i32, states: []align(8) const u8) anyerror!void {
         defer util.gpa.free(states);
-        const self: *Self = @alignCast(@ptrCast(_self));
+        const self: *Self = @ptrCast(@alignCast(_self));
         if (width != 0 and height != 0 and (width != self.width or height != self.height)) {
             self.width = @intCast(width);
             self.height = @intCast(height);
@@ -1399,12 +1449,12 @@ pub const Window = struct {
     }
 
     fn xdgSurfaceConfigure(_self: ?*anyopaque, serial: u32) anyerror!void {
-        const self: *Self = @alignCast(@ptrCast(_self));
+        const self: *Self = @ptrCast(@alignCast(_self));
         try self.xdg_surface.ack_configure(serial);
     }
 
     fn xdgDecorationConfigure(_self: ?*anyopaque, mode: wp.zxdg_toplevel_decoration_v1.e_mode) anyerror!void {
-        const self: *Self = @alignCast(@ptrCast(_self));
+        const self: *Self = @ptrCast(@alignCast(_self));
         self.client_decorated = mode == .client_side;
     }
 };
@@ -1462,8 +1512,10 @@ pub const GPUBufferPromise = struct {
     }
 
     fn created(_self: ?*anyopaque, buffer: *wp.wl_buffer) anyerror!void {
-        const self: *Self = @alignCast(@ptrCast(_self.?));
-        if (util.debug) { util.assert(self.gpu_buffer == null); }
+        const self: *Self = @ptrCast(@alignCast(_self.?));
+        if (util.debug) {
+            util.assert(self.gpu_buffer == null);
+        }
 
         self.gpu_buffer = try Buffer.create();
         errdefer self.gpu_buffer.?.destroy();
@@ -1473,7 +1525,7 @@ pub const GPUBufferPromise = struct {
     }
 
     fn failed(_self: ?*anyopaque) anyerror!void {
-        const self: *Self = @alignCast(@ptrCast(_self.?));
+        const self: *Self = @ptrCast(@alignCast(_self.?));
         self._failed = true;
     }
 };
@@ -1541,16 +1593,18 @@ const Feedback = struct {
     }
 
     fn map(self: *Feedback, fd: std.posix.fd_t, length: usize) !void {
-        if (util.debug) { util.assert(self.format_table_fd == null); }
+        if (util.debug) {
+            util.assert(self.format_table_fd == null);
+        }
         try expect(length % @sizeOf(drm.FormatMod) == 0);
         self.format_table_fd = fd;
         const mapping = try std.posix.mmap(null, length, std.posix.PROT.READ, std.posix.MAP{ .TYPE = .PRIVATE }, self.format_table_fd.?, 0);
-        self.format_table = @as([*]align(std.heap.page_size_min) drm.FormatMod, @ptrCast(mapping.ptr))[0..mapping.len / @sizeOf(drm.FormatMod)];
+        self.format_table = @as([*]align(std.heap.page_size_min) drm.FormatMod, @ptrCast(mapping.ptr))[0 .. mapping.len / @sizeOf(drm.FormatMod)];
     }
 
     fn unmap(self: *Feedback) void {
         if (self.format_table) |ft| {
-            std.posix.munmap(@as([*]align(std.heap.page_size_min) const u8, @alignCast(@ptrCast(ft.ptr)))[0..ft.len*@sizeOf(drm.FormatMod)]);
+            std.posix.munmap(@as([*]align(std.heap.page_size_min) const u8, @ptrCast(@alignCast(ft.ptr)))[0 .. ft.len * @sizeOf(drm.FormatMod)]);
             self.format_table = null;
         }
         if (self.format_table_fd) |fd| {
@@ -1560,13 +1614,13 @@ const Feedback = struct {
     }
 
     fn evDone(_self: ?*anyopaque) anyerror!void {
-        const self: *Feedback = @alignCast(@ptrCast(_self));
+        const self: *Feedback = @ptrCast(@alignCast(_self));
         self.is_done = true;
         try self.window.reconfigured();
     }
 
     fn evFormatTable(_self: ?*anyopaque, fd: std.posix.fd_t, size: u32) anyerror!void {
-        const self: *Feedback = @alignCast(@ptrCast(_self));
+        const self: *Feedback = @ptrCast(@alignCast(_self));
         self.is_done = false;
         self.unmap();
         try self.map(fd, size);
@@ -1574,16 +1628,16 @@ const Feedback = struct {
 
     fn evMainDevice(_self: ?*anyopaque, device: []align(8) const u8) anyerror!void {
         defer util.gpa.free(device);
-        const self: *Feedback = @alignCast(@ptrCast(_self));
+        const self: *Feedback = @ptrCast(@alignCast(_self));
         try expect(device.len == @sizeOf(std.posix.dev_t));
         self.is_done = false;
-        self.main_device = std.mem.readInt(std.posix.dev_t, @alignCast(@ptrCast(device.ptr)), .little);
+        self.main_device = std.mem.readInt(std.posix.dev_t, @ptrCast(@alignCast(device.ptr)), .little);
         try self.context.sync(null);
         try expect(self.is_done);
     }
 
     fn evTrancheDone(_self: ?*anyopaque) anyerror!void {
-        const self: *Feedback = @alignCast(@ptrCast(_self));
+        const self: *Feedback = @ptrCast(@alignCast(_self));
         try expect(self.tranche_device != null);
         try expect(self.tranche_formats_end != 0);
         try expect(self.tranche_flags != null);
@@ -1603,21 +1657,23 @@ const Feedback = struct {
 
     fn evTrancheTargetDevice(_self: ?*anyopaque, device: []align(8) const u8) anyerror!void {
         defer util.gpa.free(device);
-        const self: *Feedback = @alignCast(@ptrCast(_self));
+        const self: *Feedback = @ptrCast(@alignCast(_self));
         try expect(device.len == @sizeOf(std.posix.dev_t));
         self.is_done = false;
-        self.tranche_device = std.mem.readInt(std.posix.dev_t, @alignCast(@ptrCast(device.ptr)), .little);
+        self.tranche_device = std.mem.readInt(std.posix.dev_t, @ptrCast(@alignCast(device.ptr)), .little);
     }
 
     fn evTrancheFormats(_self: ?*anyopaque, indices: []align(8) const u8) anyerror!void {
         defer util.gpa.free(indices);
-        const self: *Feedback = @alignCast(@ptrCast(_self));
+        const self: *Feedback = @ptrCast(@alignCast(_self));
         try expect(self.format_table != null);
         try expect(indices.len % 2 == 0);
         try expect(self.tranche_formats_end == 0);
-        if (util.debug) { util.assert(self.tranche_formats_start == 0); }
+        if (util.debug) {
+            util.assert(self.tranche_formats_start == 0);
+        }
         self.is_done = false;
-        const _indices = @as([*]const u16, @alignCast(@ptrCast(indices.ptr)))[0..indices.len / 2];
+        const _indices = @as([*]const u16, @ptrCast(@alignCast(indices.ptr)))[0 .. indices.len / 2];
         const start = self.formats.items.len;
         for (_indices) |index| {
             try expect(index < self.format_table.?.len);
@@ -1628,7 +1684,7 @@ const Feedback = struct {
     }
 
     fn evTrancheFlags(_self: ?*anyopaque, flags: wp.zwp_linux_dmabuf_feedback_v1.e_tranche_flags) anyerror!void {
-        const self: *Feedback = @alignCast(@ptrCast(_self));
+        const self: *Feedback = @ptrCast(@alignCast(_self));
         try expect(self.tranche_flags == null);
         self.is_done = false;
         self.tranche_flags = flags;
@@ -1672,12 +1728,14 @@ pub const Buffer = struct {
     }
 
     pub fn use(self: *Self) void {
-        if (util.debug) { util.assert(!self.in_use); }
+        if (util.debug) {
+            util.assert(!self.in_use);
+        }
         self.in_use = true;
     }
 
     fn release(_self: ?*anyopaque) anyerror!void {
-        const self: *Self = @alignCast(@ptrCast(_self.?));
+        const self: *Self = @ptrCast(@alignCast(_self.?));
         self.in_use = false;
     }
 };
@@ -1689,9 +1747,13 @@ const MemoryFrameBufferSet = struct {
     const Self = @This();
 
     pub fn create(wl_shm: *wp.wl_shm, count: u32, width: u32, height: u32, format: wp.wl_shm.e_format) !*Self {
-        if (util.debug) { util.assert(width > 0 and height > 0); }
+        if (util.debug) {
+            util.assert(width > 0 and height > 0);
+        }
         // TODO: support other formats?
-        if (util.debug) { util.assert(format == .argb8888); }
+        if (util.debug) {
+            util.assert(format == .argb8888);
+        }
 
         const self = try util.gpa.create(Self);
         errdefer util.gpa.destroy(self);
@@ -1711,18 +1773,25 @@ const MemoryFrameBufferSet = struct {
             }
             self.buffers = try util.gpa.alloc(SharedMemoryBuffer, count);
         }
-        errdefer { util.gpa.free(self.buffers); self.buffers = &.{}; }
+        errdefer {
+            util.gpa.free(self.buffers);
+            self.buffers = &.{};
+        }
         const needed_pool_size = count * width * height * @sizeOf(util.RGBA);
         if (self.pool != null) {
             for (self.buffers) |*buffer| buffer.destroy();
             if (self.pool.?.size() < needed_pool_size or needed_pool_size * 2 <= self.pool.?.size()) {
-                self.pool.?.destroy(); self.pool = null;
+                self.pool.?.destroy();
+                self.pool = null;
                 self.pool = try SharedMemoryPool.create(needed_pool_size, wl_shm);
             }
         } else {
             self.pool = try SharedMemoryPool.create(needed_pool_size, wl_shm);
         }
-        errdefer { self.pool.?.destroy(); self.pool = null; }
+        errdefer {
+            self.pool.?.destroy();
+            self.pool = null;
+        }
 
         var i: u32 = 0;
         errdefer for (0..i) |j| self.buffers[j].destroy();
@@ -1749,7 +1818,9 @@ const SharedMemoryPool = struct {
     const Self = @This();
 
     pub fn create(_size: u32, wl_shm: *wp.wl_shm) !*Self {
-        if (util.debug) { util.assert(_size > 0); }
+        if (util.debug) {
+            util.assert(_size > 0);
+        }
 
         var rng = std.Random.DefaultPrng.init(@intCast(@abs(util.microTimestamp())));
         var bin: [4]u8 = undefined;
@@ -1782,7 +1853,9 @@ const SharedMemoryPool = struct {
     }
 
     pub fn destroy(self: *Self) void {
-        if (util.debug) { util.assert(self.buffer_count == 0); }
+        if (util.debug) {
+            util.assert(self.buffer_count == 0);
+        }
         std.posix.munmap(self.memory);
         std.posix.close(self.fd);
         self.wl_shm_pool.destroy() catch {};
@@ -1790,7 +1863,9 @@ const SharedMemoryPool = struct {
     }
 
     pub fn reset(self: *Self) void {
-        if (util.debug) { util.assert(self.buffer_count == 0); }
+        if (util.debug) {
+            util.assert(self.buffer_count == 0);
+        }
     }
 
     pub fn size(self: *Self) usize {
@@ -1799,8 +1874,12 @@ const SharedMemoryPool = struct {
 
     pub fn createBuffer(self: *Self, width: u32, height: u32, pixel_stride: u32, format: wp.wl_shm.e_format) !SharedMemoryBuffer {
         const _size: u32 = width * height * pixel_stride;
-        if (util.debug) { util.assert(self.memory_i % pixel_stride == 0); }
-        if (util.debug) { util.assert(self.memory.len - self.memory_i >= _size); }
+        if (util.debug) {
+            util.assert(self.memory_i % pixel_stride == 0);
+        }
+        if (util.debug) {
+            util.assert(self.memory.len - self.memory_i >= _size);
+        }
 
         const buffer = try Buffer.create();
         errdefer buffer.destroy();
@@ -1813,7 +1892,7 @@ const SharedMemoryPool = struct {
 
         return .{
             .pool = self,
-            .data = self.memory[self.memory_i-_size..self.memory_i],
+            .data = self.memory[self.memory_i - _size .. self.memory_i],
             .buffer = buffer,
         };
     }
@@ -1857,7 +1936,7 @@ const FrameCallback = struct {
     }
 
     fn done(_self: ?*anyopaque, callback_data: u32) anyerror!void {
-        const self: *Self = @alignCast(@ptrCast(_self));
+        const self: *Self = @ptrCast(@alignCast(_self));
         _ = callback_data;
         self.callback(self.user_ptr);
         self.wl_callback = null;

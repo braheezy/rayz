@@ -1,9 +1,8 @@
-
 const root = @import("root");
 const std = @import("std");
 
 const platform = @import("platform.zig");
-const util = @import("../util.zig");
+const util = @import("util.zig");
 
 const win32 = @import("windows/win32.zig");
 
@@ -39,7 +38,7 @@ pub const Context = struct {
             .cbWndExtra = 0,
             .hInstance = hinstance,
             .hIcon = null,
-            .hCursor = @alignCast(@ptrCast(win32.LoadImageW(null, win32.IDC_ARROW, win32.IMAGE_CURSOR, 0, 0, win32.LR_DEFAULTSIZE | win32.LR_SHARED))),
+            .hCursor = @ptrCast(@alignCast(win32.LoadImageW(null, win32.IDC_ARROW, win32.IMAGE_CURSOR, 0, 0, win32.LR_DEFAULTSIZE | win32.LR_SHARED))),
             .hbrBackground = null,
             .lpszMenuName = null,
             .lpszClassName = window_class_name,
@@ -70,7 +69,9 @@ pub const Context = struct {
     }
 
     pub fn destroy(self: *Self) void {
-        if (util.debug) { assert(self.windows.items.len == 0, @src()); }
+        if (util.debug) {
+            assert(self.windows.items.len == 0, @src());
+        }
         _ = win32.UnregisterClassW(window_class_name, self.hinstance);
         self.windows.deinit();
         // we don't use mime types here so no free() needed
@@ -94,7 +95,7 @@ pub const Context = struct {
                 win32.CF_UNICODETEXT => {
                     try self.clipboard_content_types.append(util.gpa, .{ .text = .{ .sub_type = .plain } });
                     try self.clipboard_content_types.append(util.gpa, .{ .text = .{ .sub_type = .plain, .charset = .utf16 } });
-                    break;  // this is currently the only one we are looking for
+                    break; // this is currently the only one we are looking for
                 },
                 else => {},
             }
@@ -144,7 +145,7 @@ pub const Context = struct {
         const utf16 = blk: {
             defer closeClipboard() catch {};
             const handle = win32.GetClipboardData(win32.CF_UNICODETEXT) orelse return null;
-            const data = @as([*:0]u16, @alignCast(@ptrCast(win32.GlobalLock(handle) orelse return error.LockingClipboardFailed)));
+            const data = @as([*:0]u16, @ptrCast(@alignCast(win32.GlobalLock(handle) orelse return error.LockingClipboardFailed)));
             defer _ = win32.GlobalUnlock(handle);
             const copy = try util.gpa.alloc(u16, std.mem.len(data));
             errdefer util.gpa.free(copy);
@@ -156,7 +157,7 @@ pub const Context = struct {
                 defer util.gpa.free(utf16);
                 return try std.unicode.utf16LeToUtf8Alloc(util.gpa, utf16);
             },
-            .utf16 => return @as([*]u8, @ptrCast(utf16))[0..utf16.len*2],
+            .utf16 => return @as([*]u8, @ptrCast(utf16))[0 .. utf16.len * 2],
         }
     }
 
@@ -172,19 +173,19 @@ pub const Context = struct {
             if (std.meta.activeTag(content.type) == .text and content.type.text.sub_type == .plain) {
                 const utf16 = switch (content.type.text.charset) {
                     .utf8 => try std.unicode.utf8ToUtf16LeAlloc(util.gpa, content.data),
-                    .utf16 => @as([*]const u16, @alignCast(@ptrCast(content.data)))[0..@divExact(content.data.len, 2)],
+                    .utf16 => @as([*]const u16, @ptrCast(@alignCast(content.data)))[0..@divExact(content.data.len, 2)],
                 };
                 errdefer if (content.type.text.charset != .utf16) util.gpa.free(utf16);
                 const handle = win32.GlobalAlloc(win32.GMEM_MOVEABLE, (utf16.len + 1) * @sizeOf(u16)) orelse return error.OutOfMemory;
                 errdefer if (win32.GlobalFree(handle) != null) unreachable;
                 {
-                    const data: []u16 = @as([*]u16, @alignCast(@ptrCast(win32.GlobalLock(handle) orelse unreachable)))[0..utf16.len+1];
+                    const data: []u16 = @as([*]u16, @ptrCast(@alignCast(win32.GlobalLock(handle) orelse unreachable)))[0 .. utf16.len + 1];
                     defer _ = win32.GlobalUnlock(handle);
                     @memcpy(data[0..utf16.len], utf16);
                     data[utf16.len] = 0;
                 }
                 _ = win32.SetClipboardData(win32.CF_UNICODETEXT, handle) orelse return error.SetClipboardFailed;
-                break;  // currently not supporting any other format
+                break; // currently not supporting any other format
             }
         }
     }
@@ -286,20 +287,7 @@ pub const Window = struct {
         const title_utf16 = try toUtf16RuntimeAlloc(title, util.gpa);
         defer util.gpa.free(title_utf16);
 
-        const hWnd = win32.CreateWindowExW(
-            0,
-            Context.window_class_name,
-            title_utf16,
-            win32.WS_OVERLAPPEDWINDOW,
-            win32.CW_USEDEFAULT,
-            win32.CW_USEDEFAULT,
-            @intCast(rect.right - rect.left),
-            @intCast(rect.bottom - rect.top),
-            null,
-            null,
-            _context.hinstance,
-            null
-        ) orelse return error.CreateWindowFailed;
+        const hWnd = win32.CreateWindowExW(0, Context.window_class_name, title_utf16, win32.WS_OVERLAPPEDWINDOW, win32.CW_USEDEFAULT, win32.CW_USEDEFAULT, @intCast(rect.right - rect.left), @intCast(rect.bottom - rect.top), null, null, _context.hinstance, null) orelse return error.CreateWindowFailed;
         errdefer _ = win32.DestroyWindow(hWnd);
         self.hWnd = hWnd;
 
@@ -364,7 +352,9 @@ pub const Window = struct {
         const dwStyle = win32.GetWindowLongW(self.hWnd, win32.GWL_STYLE);
         const dwExStyle = win32.GetWindowLongW(self.hWnd, win32.GWL_EXSTYLE);
         if (!self.fullscreen and enabled) {
-            if (util.debug) { assert(dwStyle & win32.WS_OVERLAPPEDWINDOW != 0, @src()); }
+            if (util.debug) {
+                assert(dwStyle & win32.WS_OVERLAPPEDWINDOW != 0, @src());
+            }
             try checked(win32.GetWindowPlacement(self.hWnd, &self.windowed_placement), error.SetFullscreenFailed);
             const monitor = win32.MonitorFromWindow(self.hWnd, win32.MONITOR_DEFAULTTOPRIMARY);
             var monitor_info: win32.MONITORINFO = std.mem.zeroInit(win32.MONITORINFO, .{});
@@ -420,9 +410,15 @@ pub const Window = struct {
         const window_bar_height = client_rect.top - rect.top;
 
         switch (side) {
-            .left => { rect.left = @min(x + (self.window_rect_start.left - self.nc_pointer_pos_start.x), rect.right - 1); },
-            .right => { rect.right = @max(x + (self.window_rect_start.right - self.nc_pointer_pos_start.x), rect.left + 1); },
-            .top => { rect.top = @min(y + (self.window_rect_start.top - self.nc_pointer_pos_start.y), rect.bottom - window_bar_height - 1); },
+            .left => {
+                rect.left = @min(x + (self.window_rect_start.left - self.nc_pointer_pos_start.x), rect.right - 1);
+            },
+            .right => {
+                rect.right = @max(x + (self.window_rect_start.right - self.nc_pointer_pos_start.x), rect.left + 1);
+            },
+            .top => {
+                rect.top = @min(y + (self.window_rect_start.top - self.nc_pointer_pos_start.y), rect.bottom - window_bar_height - 1);
+            },
             .topleft => {
                 rect.top = @min(y + (self.window_rect_start.top - self.nc_pointer_pos_start.y), rect.bottom - window_bar_height - 1);
                 rect.left = @min(x + (self.window_rect_start.left - self.nc_pointer_pos_start.x), rect.right - 1);
@@ -431,7 +427,9 @@ pub const Window = struct {
                 rect.top = @min(y + (self.window_rect_start.top - self.nc_pointer_pos_start.y), rect.bottom - window_bar_height - 1);
                 rect.right = @max(x + (self.window_rect_start.right - self.nc_pointer_pos_start.x), rect.left + 1);
             },
-            .bottom => { rect.bottom = @max(y + (self.window_rect_start.bottom - self.nc_pointer_pos_start.y), rect.top + window_bar_height + 1); },
+            .bottom => {
+                rect.bottom = @max(y + (self.window_rect_start.bottom - self.nc_pointer_pos_start.y), rect.top + window_bar_height + 1);
+            },
             .bottomleft => {
                 rect.bottom = @max(y + (self.window_rect_start.bottom - self.nc_pointer_pos_start.y), rect.top + window_bar_height + 1);
                 rect.left = @min(x + (self.window_rect_start.left - self.nc_pointer_pos_start.x), rect.right - 1);
@@ -470,11 +468,7 @@ pub const Window = struct {
                 self.window_rect_start.left + (self.nc_pointer_pos_current.x - self.nc_pointer_pos_start.x),
                 self.window_rect_start.top + (self.nc_pointer_pos_current.y - self.nc_pointer_pos_start.y),
             ),
-            .resize => try self.resizeWindow(
-                self.nc_pointer_pos_current.x,
-                self.nc_pointer_pos_current.y,
-                self.move_size_op.resize
-            ),
+            .resize => try self.resizeWindow(self.nc_pointer_pos_current.x, self.nc_pointer_pos_current.y, self.move_size_op.resize),
         }
     }
 
@@ -487,22 +481,24 @@ pub const Window = struct {
                 for (0..event_handling_level) |_| {
                     std.debug.print("  ", .{});
                 }
-                var buf = [_]u8{ 0 } ** 6;
+                var buf = [_]u8{0} ** 6;
                 const msg_str = win32.msgToStr(msg, &buf);
                 std.debug.print("-> {s}\n", .{msg_str});
                 event_handling_level += 1;
             }
         }
-        defer if (msg_output) { event_handling_level -= 1; };
+        defer if (msg_output) {
+            event_handling_level -= 1;
+        };
         defer {
             if (msg_output) {
                 const delta_time = util.microTimestamp() - start_time;
-                for (0..event_handling_level-1) |_| {
+                for (0..event_handling_level - 1) |_| {
                     std.debug.print("  ", .{});
                 }
-                var buf = [_]u8{ 0 } ** 6;
+                var buf = [_]u8{0} ** 6;
                 const msg_str = win32.msgToStr(msg, &buf);
-                std.debug.print("<- {s} - {d}\n", .{msg_str, delta_time});
+                std.debug.print("<- {s} - {d}\n", .{ msg_str, delta_time });
             }
         }
         const KeyLParam = packed struct {
@@ -578,14 +574,16 @@ pub const Window = struct {
 
                 const l: KeyLParam = @bitCast(lParam);
                 const key = keyFromScanCode(l.scan_code, l.extended);
-                if (util.debug) { assert(self.current_key == .null, @src()); }
+                if (util.debug) {
+                    assert(self.current_key == .null, @src());
+                }
                 self.current_key = key;
                 self.current_scan_code = l.scan_code;
                 self.current_virtual_key = @intCast(wParam);
 
                 const mapping: ?platform.KeyMapping = switch (wParam) {
                     win32.VK_ESCAPE => .{ .action = .escape },
-                    win32.VK_TAB => .{ .action = .tab },  // TODO: left tab
+                    win32.VK_TAB => .{ .action = .tab }, // TODO: left tab
                     win32.VK_BACK => .{ .action = .backspace },
                     win32.VK_RETURN => .{ .action = .enter },
                     win32.VK_INSERT => .{ .action = .insert },
@@ -598,7 +596,7 @@ pub const Window = struct {
                     win32.VK_LEFT => .{ .action = .left },
                     win32.VK_DOWN => .{ .action = .down },
                     win32.VK_RIGHT => .{ .action = .right },
-                    else => null  // (hopefully) handled by WM_CHAR
+                    else => null, // (hopefully) handled by WM_CHAR
                 };
                 if (mapping) |m| {
                     try self.dispatchKeyDown(m);
@@ -620,7 +618,7 @@ pub const Window = struct {
                     win32.VK_LSHIFT => self.modifier_state.VK_LSHIFT = false,
                     win32.VK_RSHIFT => self.modifier_state.VK_RSHIFT = false,
                     win32.VK_CAPITAL => self.modifier_state.VK_CAPITAL = false,
-                    else => {}
+                    else => {},
                 }
                 if (key != .null) {
                     const index = self.findKeyDown(key);
@@ -630,7 +628,7 @@ pub const Window = struct {
                     } else {
                         // seems to be normal behaviour both on windows and wine, so just ignore
                         if (debug_output_enabled) {
-                            std.debug.print("key up event while key not down: 0x{x} {}\n", .{l.scan_code, key});
+                            std.debug.print("key up event while key not down: 0x{x} {}\n", .{ l.scan_code, key });
                         }
                     }
                 }
@@ -735,7 +733,9 @@ pub const Window = struct {
             win32.WM_SYSCOMMAND => {
                 switch (wParam & 0xFFF0) {
                     win32.SC_SIZE => {
-                        if (util.debug) { util.assert(self.move_size_op == .none); }
+                        if (util.debug) {
+                            util.assert(self.move_size_op == .none);
+                        }
                         const l: packed struct { x: i16, y: i16, unknown: u32 } = @bitCast(lParam);
                         const w: packed struct { side: u4, unknown: u60 } = @bitCast(wParam);
                         if (custom_move_resize_handling and 1 <= w.side and w.side <= 8) {
@@ -751,7 +751,9 @@ pub const Window = struct {
                         }
                     },
                     win32.SC_MOVE => {
-                        if (util.debug) { util.assert(self.move_size_op == .none); }
+                        if (util.debug) {
+                            util.assert(self.move_size_op == .none);
+                        }
                         const l: packed struct { x: i16, y: i16, unknown: u32 } = @bitCast(lParam);
                         // wParam always == 2 / 61458, afaict
                         if (custom_move_resize_handling) {
@@ -766,16 +768,18 @@ pub const Window = struct {
                             return win32.DefWindowProcW(self.hWnd, msg, wParam, lParam);
                         }
                     },
-                    else => return win32.DefWindowProcW(self.hWnd, msg, wParam, lParam)
+                    else => return win32.DefWindowProcW(self.hWnd, msg, wParam, lParam),
                 }
             },
-            else => return win32.DefWindowProcW(self.hWnd, msg, wParam, lParam)
+            else => return win32.DefWindowProcW(self.hWnd, msg, wParam, lParam),
         }
         return 0;
     }
 
     fn dispatchKeyDown(self: *Self, mapping: platform.KeyMapping) !void {
-        if (util.debug) { assert(self.current_key != .null, @src()); }
+        if (util.debug) {
+            assert(self.current_key != .null, @src());
+        }
         if (self.findKeyDown(self.current_key) != null) {
             try self.addEvent(.key_repeat(.{
                 .scan_code = self.current_scan_code,
@@ -805,13 +809,15 @@ pub const Window = struct {
             win32.VK_LSHIFT => self.modifier_state.VK_LSHIFT = true,
             win32.VK_RSHIFT => self.modifier_state.VK_RSHIFT = true,
             win32.VK_CAPITAL => self.modifier_state.VK_CAPITAL = true,
-            else => {}
+            else => {},
         }
         self.current_key = .null;
     }
 
     fn findKeyDown(self: *Self, key: platform.Key) ?u16 {
-        if (util.debug) { assert(key != .null, @src()); }
+        if (util.debug) {
+            assert(key != .null, @src());
+        }
         for (self.keys_down.items, 0..) |other, i| {
             if (other == key) {
                 return @intCast(i);
@@ -838,7 +844,7 @@ pub const Window = struct {
         const bit_info = win32.BITMAPINFO{
             .bmiHeader = .{
                 .biWidth = @intCast(self.width),
-                .biHeight = -@as(win32.LONG, @intCast(self.height)),  // top down
+                .biHeight = -@as(win32.LONG, @intCast(self.height)), // top down
             },
         };
         var buffer: [*]util.BGRA = undefined;
@@ -857,7 +863,7 @@ pub const Window = struct {
         _ = win32.SelectObject(memory_dc, @ptrCast(bitmap)) orelse unreachable;
         self.memory_dc = memory_dc;
         self.bitmap = bitmap;
-        self.ram_buffer = buffer[0..self.width*self.height];
+        self.ram_buffer = buffer[0 .. self.width * self.height];
     }
 
     fn destroyRAMFrameBuffer(self: *Self) void {
@@ -896,17 +902,7 @@ pub const Window = struct {
             return error.NoFrame;
         }
         const window_dc = win32.GetDC(self.hWnd) orelse return error.NoDeviceContext;
-        const result = win32.BitBlt(
-            window_dc,
-            0,
-            0,
-            @intCast(self.width),
-            @as(win32.LONG, @intCast(self.height)),
-            self.memory_dc.?,
-            0,
-            0,
-            win32.SRCCOPY
-        );
+        const result = win32.BitBlt(window_dc, 0, 0, @intCast(self.width), @as(win32.LONG, @intCast(self.height)), self.memory_dc.?, 0, 0, win32.SRCCOPY);
         if (result == 0) {
             return error.BlitFailed;
         }
@@ -915,18 +911,18 @@ pub const Window = struct {
 };
 
 const WinModifierState = packed struct {
-    VK_CONTROL: bool = false,  // 0x11
-    VK_LCONTROL: bool = false,  // 0xA2
-    VK_RCONTROL: bool = false,  // 0xA3
-    VK_LWIN: bool = false,  // 0x5B
-    VK_RWIN: bool = false,  // 0x5C
-    VK_MENU: bool = false,  // 0x12
-    VK_LMENU: bool = false,  // 0xA4
-    VK_RMENU: bool = false,  // 0xA5
-    VK_SHIFT: bool = false,  // 0x10
-    VK_LSHIFT: bool = false,  // 0xA0
-    VK_RSHIFT: bool = false,  // 0xA1
-    VK_CAPITAL: bool = false,  // 0x14
+    VK_CONTROL: bool = false, // 0x11
+    VK_LCONTROL: bool = false, // 0xA2
+    VK_RCONTROL: bool = false, // 0xA3
+    VK_LWIN: bool = false, // 0x5B
+    VK_RWIN: bool = false, // 0x5C
+    VK_MENU: bool = false, // 0x12
+    VK_LMENU: bool = false, // 0xA4
+    VK_RMENU: bool = false, // 0xA5
+    VK_SHIFT: bool = false, // 0x10
+    VK_LSHIFT: bool = false, // 0xA0
+    VK_RSHIFT: bool = false, // 0xA1
+    VK_CAPITAL: bool = false, // 0x14
 
     const Self = @This();
 
@@ -985,7 +981,9 @@ fn toUtf16RuntimeAlloc(s: []const u8, allocator: std.mem.Allocator) ![:0]u16 {
     const expected_len = try std.unicode.calcUtf16LeLen(s);
     const buf = try allocator.allocSentinel(u16, expected_len, 0);
     const len = try std.unicode.utf8ToUtf16Le(buf, s);
-    if (util.debug) { assert(expected_len == len, @src()); }
+    if (util.debug) {
+        assert(expected_len == len, @src());
+    }
     return buf;
 }
 
@@ -995,15 +993,17 @@ fn toUtf16Runtime(s: []const u8, buf: []u16) ![:0]u16 {
         return error.BufferTooSmall;
     }
     const len = try std.unicode.utf8ToUtf16Le(buf, s);
-    if (util.debug) { assert(expected_len == len, @src()); }
+    if (util.debug) {
+        assert(expected_len == len, @src());
+    }
     buf[len] = 0;
-    return buf[0..len+1];
+    return buf[0 .. len + 1];
 }
 
 fn toUtf16(comptime s: []const u8) [std.unicode.calcUtf16LeLen(s) catch unreachable:0]u16 {
     return @bitCast(comptime blk: {
         const len = std.unicode.calcUtf16LeLen(s) catch unreachable;
-        var buf = [_]u16{ 0 } ** (len + 1);
+        var buf = [_]u16{0} ** (len + 1);
         _ = std.unicode.utf8ToUtf16Le(buf[0..len], s) catch unreachable;
         break :blk buf;
     });
@@ -1012,11 +1012,7 @@ fn toUtf16(comptime s: []const u8) [std.unicode.calcUtf16LeLen(s) catch unreacha
 fn assert(condition: bool, comptime src: std.builtin.SourceLocation) void {
     if (!condition) {
         var buf: [256]u8 = undefined;
-        const fmt = std.fmt.bufPrint(
-            &buf,
-            "assertion failed: {s} at {s}:{d}:{d}",
-            .{src.fn_name, src.file, src.line, src.column}
-        ) catch buf[0..256];
+        const fmt = std.fmt.bufPrint(&buf, "assertion failed: {s} at {s}:{d}:{d}", .{ src.fn_name, src.file, src.line, src.column }) catch buf[0..256];
         @panic(fmt);
     }
 }

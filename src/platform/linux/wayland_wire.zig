@@ -2,7 +2,7 @@ const std = @import("std");
 const builtin = @import("builtin");
 
 const proto = @import("wayland_protocols.zig");
-const util = @import("../../util.zig");
+const util = @import("../util.zig");
 const Color = util.Color;
 const printColor = util.printColor;
 
@@ -88,14 +88,18 @@ fn Buffer(comptime max_capacity: usize) type {
 
         inline fn read(self: *Self, count: usize) void {
             self.read_index += count;
-            if (util.debug) { util.assert(self.read_index <= self.write_index); }
+            if (util.debug) {
+                util.assert(self.read_index <= self.write_index);
+            }
             if (self.length() == 0) {
                 self.reset();
             }
         }
 
         inline fn write(self: *Self, _data: []const u8) void {
-            if (util.debug) { util.assert(_data.len < self.remainingCapacity()); }
+            if (util.debug) {
+                util.assert(_data.len < self.remainingCapacity());
+            }
             @memcpy(self.writeBuffer()[0.._data.len], _data);
             self.written(_data.len);
         }
@@ -106,7 +110,9 @@ fn Buffer(comptime max_capacity: usize) type {
 
         inline fn written(self: *Self, count: usize) void {
             self.write_index += count;
-            if (util.debug) { util.assert(self.write_index <= self.buffer.len); }
+            if (util.debug) {
+                util.assert(self.write_index <= self.buffer.len);
+            }
         }
 
         inline fn reset(self: *Self) void {
@@ -138,7 +144,7 @@ pub const MessageReader = struct {
 
     pub inline fn someInt(self: *Self, T: type) !T {
         try self.ensureLength(@sizeOf(T));
-        const value = std.mem.readInt(T, self.data[self.index..self.index+@sizeOf(T)][0..@sizeOf(T)], .little);
+        const value = std.mem.readInt(T, self.data[self.index .. self.index + @sizeOf(T)][0..@sizeOf(T)], .little);
         self.index += @sizeOf(T);
         return value;
     }
@@ -162,7 +168,7 @@ pub const MessageReader = struct {
     pub inline fn enumValue(self: *Self, E: type) !E {
         const tag_type = @typeInfo(E).@"enum".tag_type;
         const len = @sizeOf(tag_type);
-        const int_value = std.mem.readInt(tag_type, self.data[self.index..self.index+len][0..len], .little);
+        const int_value = std.mem.readInt(tag_type, self.data[self.index .. self.index + len][0..len], .little);
         self.index += len;
         return std.meta.intToEnum(E, int_value) catch error.MessageCorrupt;
     }
@@ -172,7 +178,7 @@ pub const MessageReader = struct {
         try self.ensureLength(len);
         const a = try util.gpa.alignedAlloc(u8, .@"8", len);
         errdefer util.gpa.free(a);
-        @memcpy(a, self.data[self.index..self.index+len]);
+        @memcpy(a, self.data[self.index .. self.index + len]);
         self.index += len + (4 - len % 4) % 4;
         return a;
     }
@@ -185,7 +191,7 @@ pub const MessageReader = struct {
         try self.ensureLength(len);
         const s = try util.gpa.allocSentinel(u8, len - 1, 0);
         errdefer util.gpa.free(s);
-        @memcpy(s, self.data[self.index..self.index+len-1]);
+        @memcpy(s, self.data[self.index .. self.index + len - 1]);
         self.index += (len - 1) + 4 - (len - 1) % 4;
         return s;
     }
@@ -201,7 +207,9 @@ const ObjectEntry = struct {
 };
 
 fn ObjectMapBoth(start: ObjectID, end: ObjectID) type {
-    if (util.debug) { util.assert(start < end); }
+    if (util.debug) {
+        util.assert(start < end);
+    }
     return struct {
         const Self = @This();
 
@@ -225,7 +233,9 @@ fn ObjectMapBoth(start: ObjectID, end: ObjectID) type {
             if (self.lowest_free_index >= end - start) {
                 return error.Overflow;
             }
-            if (util.debug) { util.assert(self.lowest_free_index <= self.objects.items.len); }
+            if (util.debug) {
+                util.assert(self.lowest_free_index <= self.objects.items.len);
+            }
 
             const index = self.lowest_free_index;
             if (self.lowest_free_index == self.objects.items.len) {
@@ -288,7 +298,7 @@ fn ObjectMapBoth(start: ObjectID, end: ObjectID) type {
 pub const Connection = struct {
     const Self = @This();
 
-    const buffer_size = 0x10000;  // 65k
+    const buffer_size = 0x10000; // 65k
     const fd_buffer_size = 30;
     const FDBuffer = std.ArrayList(std.posix.fd_t);
 
@@ -302,7 +312,9 @@ pub const Connection = struct {
     objects_remote: ObjectMapBoth(IDBorder, 0xFFFFFFFF) = .{},
 
     pub fn connect(display: ?[]const u8) !*Self {
-        if (util.debug) { util.assert(std.posix.fd_t == i32); }
+        if (util.debug) {
+            util.assert(std.posix.fd_t == i32);
+        }
         var fd: std.posix.socket_t = -1;
 
         if (std.process.hasEnvVarConstant(WAYLAND_SOCKET) and display == null) {
@@ -321,16 +333,22 @@ pub const Connection = struct {
             defer util.gpa.free(runtime_dir);
 
             var display_env: ?[]u8 = null;
-            defer { if (display_env != null) { util.gpa.free(display_env.?); } }
+            defer {
+                if (display_env != null) {
+                    util.gpa.free(display_env.?);
+                }
+            }
 
-			// TODO: should probably fail if WAYLAND_DISPLAY not set
-			// e.g. when in a ssh session that has nothing to do with our wayland display
+            // TODO: should probably fail if WAYLAND_DISPLAY not set
+            // e.g. when in a ssh session that has nothing to do with our wayland display
             const _display = display orelse blk: {
-                display_env = std.process.getEnvVarOwned(util.gpa, WAYLAND_DISPLAY) catch { break :blk "wayland-0"; };
+                display_env = std.process.getEnvVarOwned(util.gpa, WAYLAND_DISPLAY) catch {
+                    break :blk "wayland-0";
+                };
                 break :blk display_env.?;
             };
 
-            const socket_path = try std.fs.path.join(util.gpa, &.{runtime_dir, _display});
+            const socket_path = try std.fs.path.join(util.gpa, &.{ runtime_dir, _display });
             defer util.gpa.free(socket_path);
 
             fd = try std.posix.socket(std.posix.AF.UNIX, std.posix.SOCK.STREAM | std.posix.SOCK.CLOEXEC | std.posix.SOCK.NONBLOCK, 0);
@@ -401,9 +419,13 @@ pub const Connection = struct {
     }
 
     pub fn createDisplay(self: *Self, comptime T: type, userptr: ?*anyopaque) !*T {
-        if (util.debug) { util.assert(self.getObject(1) == error.ObjectNotFound); }
+        if (util.debug) {
+            util.assert(self.getObject(1) == error.ObjectNotFound);
+        }
         const display = try self.createLocalObject(T, userptr);
-        if (util.debug) { util.assert(display.id == 1); }
+        if (util.debug) {
+            util.assert(display.id == 1);
+        }
         return display;
     }
 
@@ -417,7 +439,7 @@ pub const Connection = struct {
 
     pub fn createRemoteObject(self: *Self, id: ObjectID, comptime T: type, userptr: ?*anyopaque) !*T {
         if (debug_output_enabled) {
-            printColor("[+] {s}:{d} (server)\n", .{T.interface_name, id}, .GREEN);
+            printColor("[+] {s}:{d} (server)\n", .{ T.interface_name, id }, .GREEN);
         }
         self.destroyObjectById(id) catch |err| {
             switch (err) {
@@ -506,14 +528,14 @@ pub const Connection = struct {
                     const array = @field(args, args_info[i].name);
                     try self.writeInt(u32, @intCast(array.len));
                     try self.write(array);
-                    try self.write(padding[0..(4 - array.len % 4) % 4]);
+                    try self.write(padding[0 .. (4 - array.len % 4) % 4]);
                 },
                 [:0]const u8 => {
                     const string = @field(args, args_info[i].name);
                     const len = string.len + 1;
                     try self.writeInt(u32, @intCast(len));
                     try self.write(string);
-                    try self.write(padding[0..4 - (len - 1) % 4]);
+                    try self.write(padding[0 .. 4 - (len - 1) % 4]);
                 },
                 ?[:0]const u8 => {
                     const string = @field(args, args_info[i].name);
@@ -523,10 +545,10 @@ pub const Connection = struct {
                         const len = string.?.len + 1;
                         try self.writeInt(u32, @intCast(len));
                         try self.write(string.?);
-                        try self.write(padding[0..4 - (len - 1) % 4]);
+                        try self.write(padding[0 .. 4 - (len - 1) % 4]);
                     }
                 },
-                else => @compileError(std.fmt.comptimePrint("unexpected type: {s}", .{@typeName(field.type)}))
+                else => @compileError(std.fmt.comptimePrint("unexpected type: {s}", .{@typeName(field.type)})),
             }
         }
         // TODO: test performance impact of flushing after each message
@@ -564,11 +586,13 @@ pub const Connection = struct {
             error.WouldBlock => return false,
             else => return e,
         };
-        const header = @as([*]u32, @alignCast(@ptrCast(header_bytes.ptr)))[0..2];
+        const header = @as([*]u32, @ptrCast(@alignCast(header_bytes.ptr)))[0..2];
         const object_id = header[0];
         const size: u16 = @intCast(header[1] >> 16);
         const op: u16 = @intCast(header[1] & 0xFFFF);
-        if (util.debug) { util.assert(size <= buffer_size); }  // max message size is 65k; buffer_size is just as big
+        if (util.debug) {
+            util.assert(size <= buffer_size);
+        } // max message size is 65k; buffer_size is just as big
         if (size % 4 != 0) {
             return error.MessageCorrupt;
         }
@@ -589,8 +613,12 @@ pub const Connection = struct {
     }
 
     fn read(self: *Self, length: usize, look_ahead: bool) ![]u8 {
-        if (util.debug) { util.assert(length % 4 == 0); }
-        if (util.debug) { util.assert(length <= self.read_buffer.buffer.len); }
+        if (util.debug) {
+            util.assert(length % 4 == 0);
+        }
+        if (util.debug) {
+            util.assert(length <= self.read_buffer.buffer.len);
+        }
         if (self.read_buffer.length() < length) {
             if (self.read_buffer.totalCapacity() < length) {
                 self.read_buffer.reset();
@@ -616,12 +644,14 @@ pub const Connection = struct {
             var control_i: usize = 0;
             const control_data: [*]const u8 = @ptrCast(msg.control);
             while (control_i + @sizeOf(CMsgHdr) < msg.controllen) {
-                const hdr: *const CMsgHdr = @alignCast(@ptrCast(&control_data[control_i]));
+                const hdr: *const CMsgHdr = @ptrCast(@alignCast(&control_data[control_i]));
                 control_i += @sizeOf(CMsgHdr);
                 const fd_len = hdr.cmsg_len - @sizeOf(CMsgHdr);
-                if (util.debug) { util.assert(fd_len <= msg.controllen - control_i); }
+                if (util.debug) {
+                    util.assert(fd_len <= msg.controllen - control_i);
+                }
                 const fd_count = fd_len / @sizeOf(std.posix.fd_t);
-                const fds = @as([*]const std.posix.fd_t, @alignCast(@ptrCast(&control_data[control_i])))[0..fd_count];
+                const fds = @as([*]const std.posix.fd_t, @ptrCast(@alignCast(&control_data[control_i])))[0..fd_count];
                 control_i += hdr.cmsg_len;
                 try self.read_fd_buffer.appendSlice(util.gpa, fds);
             }
@@ -654,7 +684,9 @@ pub const Connection = struct {
     }
 
     fn writeInt(self: *Self, comptime _type: type, value: _type) !void {
-        if (util.debug) { util.assert(_type == u32 or _type == i32); }
+        if (util.debug) {
+            util.assert(_type == u32 or _type == i32);
+        }
         var buffer: [4]u8 = undefined;
         std.mem.writeInt(_type, &buffer, value, .little);
         try self.write(&buffer);
@@ -681,35 +713,31 @@ pub const Connection = struct {
             const cmsg_buffer_size = @sizeOf(CMsgHdr) + fds_size;
             const cmsg_buffer = try util.gpa.alloc(u8, cmsg_buffer_size);
             defer util.gpa.free(cmsg_buffer);
-            const cmsghdr: *CMsgHdr = @alignCast(@ptrCast(cmsg_buffer.ptr));
+            const cmsghdr: *CMsgHdr = @ptrCast(@alignCast(cmsg_buffer.ptr));
             cmsghdr.* = .{
                 .cmsg_len = cmsg_buffer_size,
                 .cmsg_level = std.posix.SOL.SOCKET,
                 .cmsg_type = SCM_RIGHTS,
             };
-            const cmsg_fds: [*]std.posix.fd_t = @alignCast(@ptrCast(cmsg_buffer.ptr[@sizeOf(CMsgHdr)..]));
+            const cmsg_fds: [*]std.posix.fd_t = @ptrCast(@alignCast(cmsg_buffer.ptr[@sizeOf(CMsgHdr)..]));
             @memcpy(cmsg_fds, fds);
             const data = self.write_buffer.data();
 
-            const count = std.posix.sendmsg(
-                self.fd,
-                &.{
-                    .name = null,
-                    .namelen = 0,
-                    .iov = (&std.posix.iovec_const{
-                        .base = data.ptr,
-                        .len = data.len,
-                    })[0..1],
-                    .iovlen = 1,
-                    .control = cmsg_buffer.ptr,
-                    .controllen = @intCast(cmsg_buffer.len),
-                    .flags = 0,
-                },
-                0
-            ) catch |e| {
+            const count = std.posix.sendmsg(self.fd, &.{
+                .name = null,
+                .namelen = 0,
+                .iov = (&std.posix.iovec_const{
+                    .base = data.ptr,
+                    .len = data.len,
+                })[0..1],
+                .iovlen = 1,
+                .control = cmsg_buffer.ptr,
+                .controllen = @intCast(cmsg_buffer.len),
+                .flags = 0,
+            }, 0) catch |e| {
                 if (e == error.WouldBlock) {
-                    var pollfd = [_]std.posix.pollfd{ .{ .fd = self.fd, .events = std.posix.POLL.IN, .revents = 0 } };
-                    _ = try std.posix.poll(&pollfd, -1);  // might block forever
+                    var pollfd = [_]std.posix.pollfd{.{ .fd = self.fd, .events = std.posix.POLL.IN, .revents = 0 }};
+                    _ = try std.posix.poll(&pollfd, -1); // might block forever
                     continue;
                 } else {
                     return e;
@@ -757,18 +785,17 @@ fn getSize(args: anytype) usize {
     return size;
 }
 
-
 fn printStruct(data: anytype, color: ?Color) void {
     const fields = @typeInfo(@TypeOf(data)).@"struct".fields;
     printColor("(", .{}, color);
     inline for (fields, 0..) |f, i| {
         switch (f.type) {
-            ?[:0]const u8 => printColor("{s}: \"{?s}\"", .{f.name, @field(data, f.name)}, color),
-            [:0]const u8 => printColor("{s}: \"{s}\"", .{f.name, @field(data, f.name)}, color),
-            []align(8) const u8 => printColor("{s}: {any}", .{f.name, @field(data, f.name)}, color),
-            f32 => printColor("{s}: {d}", .{f.name, @field(data, f.name)}, color),
-            ?ObjectID => printColor("{s}: {?}", .{f.name, @field(data, f.name)}, color),
-            else => printColor("{s}: {}", .{f.name, @field(data, f.name)}, color),
+            ?[:0]const u8 => printColor("{s}: \"{?s}\"", .{ f.name, @field(data, f.name) }, color),
+            [:0]const u8 => printColor("{s}: \"{s}\"", .{ f.name, @field(data, f.name) }, color),
+            []align(8) const u8 => printColor("{s}: {any}", .{ f.name, @field(data, f.name) }, color),
+            f32 => printColor("{s}: {d}", .{ f.name, @field(data, f.name) }, color),
+            ?ObjectID => printColor("{s}: {?}", .{ f.name, @field(data, f.name) }, color),
+            else => printColor("{s}: {}", .{ f.name, @field(data, f.name) }, color),
         }
         if (i < fields.len - 1) {
             printColor(", ", .{}, color);

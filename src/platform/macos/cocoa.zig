@@ -100,6 +100,10 @@ pub fn NSDate() Class {
     return objc.getClass("NSDate").?;
 }
 
+pub fn NSAutoreleasePool() Class {
+    return objc.getClass("NSAutoreleasePool").?;
+}
+
 pub fn NSPasteboard() Class {
     return objc.getClass("NSPasteboard").?;
 }

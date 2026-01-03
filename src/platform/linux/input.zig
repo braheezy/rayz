@@ -1,17 +1,16 @@
 // Device properties and quirks
 pub const Property = enum(u8) {
-    INPUT_PROP_POINTER = 0x00,	// needs a pointer
-    INPUT_PROP_DIRECT = 0x01,	// direct input devices
-    INPUT_PROP_BUTTONPAD = 0x02,	// has button(s) under pad
-    INPUT_PROP_SEMI_MT = 0x03,	// touch rectangle only
-    INPUT_PROP_TOPBUTTONPAD = 0x04,	// softbuttons at top of pad
-    INPUT_PROP_POINTING_STICK = 0x05,	// is a pointing stick
-    INPUT_PROP_ACCELEROMETER = 0x06,	// has accelerometer
+    INPUT_PROP_POINTER = 0x00, // needs a pointer
+    INPUT_PROP_DIRECT = 0x01, // direct input devices
+    INPUT_PROP_BUTTONPAD = 0x02, // has button(s) under pad
+    INPUT_PROP_SEMI_MT = 0x03, // touch rectangle only
+    INPUT_PROP_TOPBUTTONPAD = 0x04, // softbuttons at top of pad
+    INPUT_PROP_POINTING_STICK = 0x05, // is a pointing stick
+    INPUT_PROP_ACCELEROMETER = 0x06, // has accelerometer
 
     const MAX = 0x1f;
     const CNT = (MAX + 1);
 };
-
 
 // Event types
 pub const EventType = enum(u8) {
@@ -29,7 +28,7 @@ pub const EventType = enum(u8) {
     FF_STATUS = 0x17,
 
     const MAX = 0x1f;
-    const CNT = (MAX+1);
+    const CNT = (MAX + 1);
 };
 
 // Synchronization events.
@@ -40,7 +39,7 @@ pub const SyncEventType = enum(u8) {
     DROPPED = 3,
 
     const MAX = 0xf;
-    const CNT = (MAX+1);
+    const CNT = (MAX + 1);
 };
 
 // Keys and buttons
@@ -167,11 +166,11 @@ pub const Key = enum(u16) {
     KEY_MUTE = 113,
     KEY_VOLUMEDOWN = 114,
     KEY_VOLUMEUP = 115,
-    KEY_POWER = 116,	// SC System Power Down
+    KEY_POWER = 116, // SC System Power Down
     KEY_KPEQUAL = 117,
     KEY_KPPLUSMINUS = 118,
     KEY_PAUSE = 119,
-    KEY_SCALE = 120,	// AL Compiz Scale (Expose)
+    KEY_SCALE = 120, // AL Compiz Scale (Expose)
 
     KEY_KPCOMMA = 121,
     KEY_HANGEUL = 122,
@@ -182,40 +181,40 @@ pub const Key = enum(u16) {
     KEY_RIGHTMETA = 126,
     KEY_COMPOSE = 127,
 
-    KEY_STOP = 128,	// AC Stop
+    KEY_STOP = 128, // AC Stop
     KEY_AGAIN = 129,
-    KEY_PROPS = 130,	// AC Properties
-    KEY_UNDO = 131,	// AC Undo
+    KEY_PROPS = 130, // AC Properties
+    KEY_UNDO = 131, // AC Undo
     KEY_FRONT = 132,
-    KEY_COPY = 133,	// AC Copy
-    KEY_OPEN = 134,	// AC Open
-    KEY_PASTE = 135,	// AC Paste
-    KEY_FIND = 136,	// AC Search
-    KEY_CUT = 137,	// AC Cut
-    KEY_HELP = 138,	// AL Integrated Help Center
-    KEY_MENU = 139,	// Menu (show menu)
-    KEY_CALC = 140,	// AL Calculator
+    KEY_COPY = 133, // AC Copy
+    KEY_OPEN = 134, // AC Open
+    KEY_PASTE = 135, // AC Paste
+    KEY_FIND = 136, // AC Search
+    KEY_CUT = 137, // AC Cut
+    KEY_HELP = 138, // AL Integrated Help Center
+    KEY_MENU = 139, // Menu (show menu)
+    KEY_CALC = 140, // AL Calculator
     KEY_SETUP = 141,
-    KEY_SLEEP = 142,	// SC System Sleep
-    KEY_WAKEUP = 143,	// System Wake Up
-    KEY_FILE = 144,	// AL Local Machine Browser
+    KEY_SLEEP = 142, // SC System Sleep
+    KEY_WAKEUP = 143, // System Wake Up
+    KEY_FILE = 144, // AL Local Machine Browser
     KEY_SENDFILE = 145,
     KEY_DELETEFILE = 146,
     KEY_XFER = 147,
     KEY_PROG1 = 148,
     KEY_PROG2 = 149,
-    KEY_WWW = 150,	// AL Internet Browser
+    KEY_WWW = 150, // AL Internet Browser
     KEY_MSDOS = 151,
-    KEY_COFFEE = 152,	// AL Terminal Lock/Screensaver
+    KEY_COFFEE = 152, // AL Terminal Lock/Screensaver
     //KEY_SCREENLOCK = KEY_COFFEE
-    KEY_ROTATE_DISPLAY = 153,	// Display orientation for e.g. tablets
+    KEY_ROTATE_DISPLAY = 153, // Display orientation for e.g. tablets
     //KEY_DIRECTION = KEY_ROTATE_DISPLAY
     KEY_CYCLEWINDOWS = 154,
     KEY_MAIL = 155,
-    KEY_BOOKMARKS = 156,	// AC Bookmarks
+    KEY_BOOKMARKS = 156, // AC Bookmarks
     KEY_COMPUTER = 157,
-    KEY_BACK = 158,	// AC Back
-    KEY_FORWARD = 159,	// AC Forward
+    KEY_BACK = 158, // AC Back
+    KEY_FORWARD = 159, // AC Forward
     KEY_CLOSECD = 160,
     KEY_EJECTCD = 161,
     KEY_EJECTCLOSECD = 162,
@@ -225,20 +224,20 @@ pub const Key = enum(u16) {
     KEY_STOPCD = 166,
     KEY_RECORD = 167,
     KEY_REWIND = 168,
-    KEY_PHONE = 169,	// Media Select Telephone
+    KEY_PHONE = 169, // Media Select Telephone
     KEY_ISO = 170,
-    KEY_CONFIG = 171,	// AL Consumer Control Configuration
-    KEY_HOMEPAGE = 172,	// AC Home
-    KEY_REFRESH = 173,	// AC Refresh
-    KEY_EXIT = 174,	// AC Exit
+    KEY_CONFIG = 171, // AL Consumer Control Configuration
+    KEY_HOMEPAGE = 172, // AC Home
+    KEY_REFRESH = 173, // AC Refresh
+    KEY_EXIT = 174, // AC Exit
     KEY_MOVE = 175,
     KEY_EDIT = 176,
     KEY_SCROLLUP = 177,
     KEY_SCROLLDOWN = 178,
     KEY_KPLEFTPAREN = 179,
     KEY_KPRIGHTPAREN = 180,
-    KEY_NEW = 181,	// AC New
-    KEY_REDO = 182,	// AC Redo/Repeat
+    KEY_NEW = 181, // AC New
+    KEY_REDO = 182, // AC Redo/Repeat
 
     KEY_F13 = 183,
     KEY_F14 = 184,
@@ -257,14 +256,14 @@ pub const Key = enum(u16) {
     KEY_PAUSECD = 201,
     KEY_PROG3 = 202,
     KEY_PROG4 = 203,
-    KEY_ALL_APPLICATIONS = 204,	// AC Desktop Show All Applications
+    KEY_ALL_APPLICATIONS = 204, // AC Desktop Show All Applications
     //KEY_DASHBOARD = KEY_ALL_APPLICATIONS
     KEY_SUSPEND = 205,
-    KEY_CLOSE = 206,	// AC Close
+    KEY_CLOSE = 206, // AC Close
     KEY_PLAY = 207,
     KEY_FASTFORWARD = 208,
     KEY_BASSBOOST = 209,
-    KEY_PRINT = 210,	// AC Print
+    KEY_PRINT = 210, // AC Print
     KEY_HP = 211,
     KEY_CAMERA = 212,
     KEY_SOUND = 213,
@@ -273,24 +272,24 @@ pub const Key = enum(u16) {
     KEY_CHAT = 216,
     KEY_SEARCH = 217,
     KEY_CONNECT = 218,
-    KEY_FINANCE = 219,	// AL Checkbook/Finance
+    KEY_FINANCE = 219, // AL Checkbook/Finance
     KEY_SPORT = 220,
     KEY_SHOP = 221,
     KEY_ALTERASE = 222,
-    KEY_CANCEL = 223,	// AC Cancel
+    KEY_CANCEL = 223, // AC Cancel
     KEY_BRIGHTNESSDOWN = 224,
     KEY_BRIGHTNESSUP = 225,
     KEY_MEDIA = 226,
 
-    KEY_SWITCHVIDEOMODE = 227,  // Cycle between available video outputs (Monitor/LCD/TV-out/etc)
+    KEY_SWITCHVIDEOMODE = 227, // Cycle between available video outputs (Monitor/LCD/TV-out/etc)
     KEY_KBDILLUMTOGGLE = 228,
     KEY_KBDILLUMDOWN = 229,
     KEY_KBDILLUMUP = 230,
 
-    KEY_SEND = 231,	// AC Send
-    KEY_REPLY = 232,	// AC Reply
-    KEY_FORWARDMAIL = 233,	// AC Forward Msg
-    KEY_SAVE = 234,	// AC Save
+    KEY_SEND = 231, // AC Send
+    KEY_REPLY = 232, // AC Reply
+    KEY_FORWARDMAIL = 233, // AC Forward Msg
+    KEY_SAVE = 234, // AC Save
     KEY_DOCUMENTS = 235,
 
     KEY_BATTERY = 236,
@@ -301,18 +300,18 @@ pub const Key = enum(u16) {
 
     KEY_UNKNOWN = 240,
 
-    KEY_VIDEO_NEXT = 241,	// drive next video source
-    KEY_VIDEO_PREV = 242,	// drive previous video source
-    KEY_BRIGHTNESS_CYCLE = 243,	// brightness up, after max is min
-    KEY_BRIGHTNESS_AUTO = 244,	// Set Auto Brightness: manual brightness control is off, rely on ambient
+    KEY_VIDEO_NEXT = 241, // drive next video source
+    KEY_VIDEO_PREV = 242, // drive previous video source
+    KEY_BRIGHTNESS_CYCLE = 243, // brightness up, after max is min
+    KEY_BRIGHTNESS_AUTO = 244, // Set Auto Brightness: manual brightness control is off, rely on ambient
     //KEY_BRIGHTNESS_ZERO = KEY_BRIGHTNESS_AUTO,
-    KEY_DISPLAY_OFF = 245,	// display device to off state
+    KEY_DISPLAY_OFF = 245, // display device to off state
 
-    KEY_WWAN = 246,	// Wireless WAN (LTE, UMTS, GSM, etc.)
+    KEY_WWAN = 246, // Wireless WAN (LTE, UMTS, GSM, etc.)
     //KEY_WIMAX = KEY_WWAN
-    KEY_RFKILL = 247,	// Key that controls all radios
+    KEY_RFKILL = 247, // Key that controls all radios
 
-    KEY_MICMUTE = 248,	// Mute / unmute the microphone
+    KEY_MICMUTE = 248, // Mute / unmute the microphone
 
     // Code 255 is reserved for special needs of AT keyboard driver
 
@@ -382,14 +381,14 @@ pub const Key = enum(u16) {
     BTN_TOOL_FINGER = 0x145,
     BTN_TOOL_MOUSE = 0x146,
     BTN_TOOL_LENS = 0x147,
-    BTN_TOOL_QUINTTAP = 0x148,	// Five fingers on trackpad
+    BTN_TOOL_QUINTTAP = 0x148, // Five fingers on trackpad
     BTN_STYLUS3 = 0x149,
     BTN_TOUCH = 0x14a,
     BTN_STYLUS = 0x14b,
     BTN_STYLUS2 = 0x14c,
     BTN_TOOL_DOUBLETAP = 0x14d,
     BTN_TOOL_TRIPLETAP = 0x14e,
-    BTN_TOOL_QUADTAP = 0x14f,	// Four fingers on trackpad
+    BTN_TOOL_QUADTAP = 0x14f, // Four fingers on trackpad
 
     // wheel
     BTN_GEAR_DOWN = 0x150,
@@ -401,56 +400,56 @@ pub const Key = enum(u16) {
     KEY_CLEAR = 0x163,
     KEY_POWER2 = 0x164,
     KEY_OPTION = 0x165,
-    KEY_INFO = 0x166,	// AL OEM Features/Tips/Tutorial
+    KEY_INFO = 0x166, // AL OEM Features/Tips/Tutorial
     KEY_TIME = 0x167,
     KEY_VENDOR = 0x168,
     KEY_ARCHIVE = 0x169,
-    KEY_PROGRAM = 0x16a,	// Media Select Program Guide
+    KEY_PROGRAM = 0x16a, // Media Select Program Guide
     KEY_CHANNEL = 0x16b,
     KEY_FAVORITES = 0x16c,
     KEY_EPG = 0x16d,
-    KEY_PVR = 0x16e,	// Media Select Home
+    KEY_PVR = 0x16e, // Media Select Home
     KEY_MHP = 0x16f,
     KEY_LANGUAGE = 0x170,
     KEY_TITLE = 0x171,
     KEY_SUBTITLE = 0x172,
     KEY_ANGLE = 0x173,
-    KEY_FULL_SCREEN = 0x174,	// AC View Toggle
+    KEY_FULL_SCREEN = 0x174, // AC View Toggle
     //KEY_ZOOM = 0x174,   // = KEY_FULL_SCREEN
     KEY_MODE = 0x175,
     KEY_KEYBOARD = 0x176,
-    KEY_ASPECT_RATIO = 0x177,	// HUTRR37: Aspect
+    KEY_ASPECT_RATIO = 0x177, // HUTRR37: Aspect
     //KEY_SCREEN = 0x177, // = KEY_ASPECT_RATIO
-    KEY_PC = 0x178,	// Media Select Computer
-    KEY_TV = 0x179,	// Media Select TV
-    KEY_TV2 = 0x17a,	// Media Select Cable
-    KEY_VCR = 0x17b,	// Media Select VCR
-    KEY_VCR2 = 0x17c,	// VCR Plus
-    KEY_SAT = 0x17d,	// Media Select Satellite
+    KEY_PC = 0x178, // Media Select Computer
+    KEY_TV = 0x179, // Media Select TV
+    KEY_TV2 = 0x17a, // Media Select Cable
+    KEY_VCR = 0x17b, // Media Select VCR
+    KEY_VCR2 = 0x17c, // VCR Plus
+    KEY_SAT = 0x17d, // Media Select Satellite
     KEY_SAT2 = 0x17e,
-    KEY_CD = 0x17f,	// Media Select CD
-    KEY_TAPE = 0x180,	// Media Select Tape
+    KEY_CD = 0x17f, // Media Select CD
+    KEY_TAPE = 0x180, // Media Select Tape
     KEY_RADIO = 0x181,
-    KEY_TUNER = 0x182,	// Media Select Tuner
+    KEY_TUNER = 0x182, // Media Select Tuner
     KEY_PLAYER = 0x183,
     KEY_TEXT = 0x184,
-    KEY_DVD = 0x185,	// Media Select DVD
+    KEY_DVD = 0x185, // Media Select DVD
     KEY_AUX = 0x186,
     KEY_MP3 = 0x187,
-    KEY_AUDIO = 0x188,	// AL Audio Browser
-    KEY_VIDEO = 0x189,	// AL Movie Browser
+    KEY_AUDIO = 0x188, // AL Audio Browser
+    KEY_VIDEO = 0x189, // AL Movie Browser
     KEY_DIRECTORY = 0x18a,
     KEY_LIST = 0x18b,
-    KEY_MEMO = 0x18c,	// Media Select Messages
+    KEY_MEMO = 0x18c, // Media Select Messages
     KEY_CALENDAR = 0x18d,
     KEY_RED = 0x18e,
     KEY_GREEN = 0x18f,
     KEY_YELLOW = 0x190,
     KEY_BLUE = 0x191,
-    KEY_CHANNELUP = 0x192,	// Channel Increment
-    KEY_CHANNELDOWN = 0x193,	// Channel Decrement
+    KEY_CHANNELUP = 0x192, // Channel Increment
+    KEY_CHANNELDOWN = 0x193, // Channel Decrement
     KEY_FIRST = 0x194,
-    KEY_LAST = 0x195,	// Recall Last
+    KEY_LAST = 0x195, // Recall Last
     KEY_AB = 0x196,
     KEY_NEXT = 0x197,
     KEY_RESTART = 0x198,
@@ -461,39 +460,39 @@ pub const Key = enum(u16) {
     KEY_DIGITS = 0x19d,
     KEY_TEEN = 0x19e,
     KEY_TWEN = 0x19f,
-    KEY_VIDEOPHONE = 0x1a0,	// Media Select Video Phone
-    KEY_GAMES = 0x1a1,	// Media Select Games
-    KEY_ZOOMIN = 0x1a2,	// AC Zoom In
-    KEY_ZOOMOUT = 0x1a3,	// AC Zoom Out
-    KEY_ZOOMRESET = 0x1a4,	// AC Zoom
-    KEY_WORDPROCESSOR = 0x1a5,	// AL Word Processor
-    KEY_EDITOR = 0x1a6,	// AL Text Editor
-    KEY_SPREADSHEET = 0x1a7,	// AL Spreadsheet
-    KEY_GRAPHICSEDITOR = 0x1a8,	// AL Graphics Editor
-    KEY_PRESENTATION = 0x1a9,	// AL Presentation App
-    KEY_DATABASE = 0x1aa,	// AL Database App
-    KEY_NEWS = 0x1ab,	// AL Newsreader
-    KEY_VOICEMAIL = 0x1ac,	// AL Voicemail
-    KEY_ADDRESSBOOK = 0x1ad,	// AL Contacts/Address Book
-    KEY_MESSENGER = 0x1ae,	// AL Instant Messaging
-    KEY_DISPLAYTOGGLE = 0x1af,	// Turn display (LCD) on and off
+    KEY_VIDEOPHONE = 0x1a0, // Media Select Video Phone
+    KEY_GAMES = 0x1a1, // Media Select Games
+    KEY_ZOOMIN = 0x1a2, // AC Zoom In
+    KEY_ZOOMOUT = 0x1a3, // AC Zoom Out
+    KEY_ZOOMRESET = 0x1a4, // AC Zoom
+    KEY_WORDPROCESSOR = 0x1a5, // AL Word Processor
+    KEY_EDITOR = 0x1a6, // AL Text Editor
+    KEY_SPREADSHEET = 0x1a7, // AL Spreadsheet
+    KEY_GRAPHICSEDITOR = 0x1a8, // AL Graphics Editor
+    KEY_PRESENTATION = 0x1a9, // AL Presentation App
+    KEY_DATABASE = 0x1aa, // AL Database App
+    KEY_NEWS = 0x1ab, // AL Newsreader
+    KEY_VOICEMAIL = 0x1ac, // AL Voicemail
+    KEY_ADDRESSBOOK = 0x1ad, // AL Contacts/Address Book
+    KEY_MESSENGER = 0x1ae, // AL Instant Messaging
+    KEY_DISPLAYTOGGLE = 0x1af, // Turn display (LCD) on and off
     //KEY_BRIGHTNESS_TOGGLE = 0x1af,  // =KEY_DISPLAYTOGGLE
-    KEY_SPELLCHECK = 0x1b0,   // AL Spell Check
-    KEY_LOGOFF = 0x1b1,   // AL Logoff
+    KEY_SPELLCHECK = 0x1b0, // AL Spell Check
+    KEY_LOGOFF = 0x1b1, // AL Logoff
 
     KEY_DOLLAR = 0x1b2,
     KEY_EURO = 0x1b3,
 
-    KEY_FRAMEBACK = 0x1b4,	// Consumer - transport controls
+    KEY_FRAMEBACK = 0x1b4, // Consumer - transport controls
     KEY_FRAMEFORWARD = 0x1b5,
-    KEY_CONTEXT_MENU = 0x1b6,	// GenDesc - system context menu
-    KEY_MEDIA_REPEAT = 0x1b7,	// Consumer - transport control
-    KEY_10CHANNELSUP = 0x1b8,	// 10 channels up (10+)
-    KEY_10CHANNELSDOWN = 0x1b9,	// 10 channels down (10-)
-    KEY_IMAGES = 0x1ba,	// AL Image Browser
-    KEY_NOTIFICATION_CENTER = 0x1bc,	// Show/hide the notification center
-    KEY_PICKUP_PHONE = 0x1bd,	// Answer incoming call
-    KEY_HANGUP_PHONE = 0x1be,	// Decline incoming call
+    KEY_CONTEXT_MENU = 0x1b6, // GenDesc - system context menu
+    KEY_MEDIA_REPEAT = 0x1b7, // Consumer - transport control
+    KEY_10CHANNELSUP = 0x1b8, // 10 channels up (10+)
+    KEY_10CHANNELSDOWN = 0x1b9, // 10 channels down (10-)
+    KEY_IMAGES = 0x1ba, // AL Image Browser
+    KEY_NOTIFICATION_CENTER = 0x1bc, // Show/hide the notification center
+    KEY_PICKUP_PHONE = 0x1bd, // Answer incoming call
+    KEY_HANGUP_PHONE = 0x1be, // Decline incoming call
 
     KEY_DEL_EOL = 0x1c0,
     KEY_DEL_EOS = 0x1c1,
@@ -534,8 +533,8 @@ pub const Key = enum(u16) {
     KEY_BRL_DOT9 = 0x1f9,
     KEY_BRL_DOT10 = 0x1fa,
 
-    KEY_NUMERIC_0 = 0x200,	// used by phones, remote controls,
-    KEY_NUMERIC_1 = 0x201,	// and other keypads
+    KEY_NUMERIC_0 = 0x200, // used by phones, remote controls,
+    KEY_NUMERIC_1 = 0x201, // and other keypads
     KEY_NUMERIC_2 = 0x202,
     KEY_NUMERIC_3 = 0x203,
     KEY_NUMERIC_4 = 0x204,
@@ -546,15 +545,15 @@ pub const Key = enum(u16) {
     KEY_NUMERIC_9 = 0x209,
     KEY_NUMERIC_STAR = 0x20a,
     KEY_NUMERIC_POUND = 0x20b,
-    KEY_NUMERIC_A = 0x20c,	// Phone key A - HUT Telephony 0xb9
+    KEY_NUMERIC_A = 0x20c, // Phone key A - HUT Telephony 0xb9
     KEY_NUMERIC_B = 0x20d,
     KEY_NUMERIC_C = 0x20e,
     KEY_NUMERIC_D = 0x20f,
 
     KEY_CAMERA_FOCUS = 0x210,
-    KEY_WPS_BUTTON = 0x211,	// WiFi Protected Setup key
+    KEY_WPS_BUTTON = 0x211, // WiFi Protected Setup key
 
-    KEY_TOUCHPAD_TOGGLE = 0x212,	// Request switch touchpad on or off
+    KEY_TOUCHPAD_TOGGLE = 0x212, // Request switch touchpad on or off
     KEY_TOUCHPAD_ON = 0x213,
     KEY_TOUCHPAD_OFF = 0x214,
 
@@ -567,37 +566,37 @@ pub const Key = enum(u16) {
 
     KEY_ATTENDANT_ON = 0x21b,
     KEY_ATTENDANT_OFF = 0x21c,
-    KEY_ATTENDANT_TOGGLE = 0x21d,	// Attendant call on or off
-    KEY_LIGHTS_TOGGLE = 0x21e,	// Reading light on or off
+    KEY_ATTENDANT_TOGGLE = 0x21d, // Attendant call on or off
+    KEY_LIGHTS_TOGGLE = 0x21e, // Reading light on or off
 
     BTN_DPAD_UP = 0x220,
     BTN_DPAD_DOWN = 0x221,
     BTN_DPAD_LEFT = 0x222,
     BTN_DPAD_RIGHT = 0x223,
 
-    KEY_ALS_TOGGLE = 0x230,	// Ambient light sensor
-    KEY_ROTATE_LOCK_TOGGLE = 0x231,	// Display rotation lock
-    KEY_REFRESH_RATE_TOGGLE = 0x232,	// Display refresh rate toggle
+    KEY_ALS_TOGGLE = 0x230, // Ambient light sensor
+    KEY_ROTATE_LOCK_TOGGLE = 0x231, // Display rotation lock
+    KEY_REFRESH_RATE_TOGGLE = 0x232, // Display refresh rate toggle
 
-    KEY_BUTTONCONFIG = 0x240,	// AL Button Configuration
-    KEY_TASKMANAGER = 0x241,	// AL Task/Project Manager
-    KEY_JOURNAL = 0x242,	// AL Log/Journal/Timecard
-    KEY_CONTROLPANEL = 0x243,	// AL Control Panel
-    KEY_APPSELECT = 0x244,	// AL Select Task/Application
-    KEY_SCREENSAVER = 0x245,	// AL Screen Saver
-    KEY_VOICECOMMAND = 0x246,	// Listening Voice Command
-    KEY_ASSISTANT = 0x247,	// AL Context-aware desktop assistant
-    KEY_KBD_LAYOUT_NEXT = 0x248,	// AC Next Keyboard Layout Select
-    KEY_EMOJI_PICKER = 0x249,	// Show/hide emoji picker (HUTRR101)
-    KEY_DICTATE = 0x24a,	// Start or Stop Voice Dictation Session (HUTRR99)
-    KEY_CAMERA_ACCESS_ENABLE = 0x24b,	// Enables programmatic access to camera devices. (HUTRR72)
-    KEY_CAMERA_ACCESS_DISABLE = 0x24c,	// Disables programmatic access to camera devices. (HUTRR72)
-    KEY_CAMERA_ACCESS_TOGGLE = 0x24d,	// Toggles the current state of the camera access control. (HUTRR72)
-    KEY_ACCESSIBILITY = 0x24e,	// Toggles the system bound accessibility UI/command (HUTRR116)
-    KEY_DO_NOT_DISTURB = 0x24f,	// Toggles the system-wide "Do Not Disturb" control (HUTRR94)
+    KEY_BUTTONCONFIG = 0x240, // AL Button Configuration
+    KEY_TASKMANAGER = 0x241, // AL Task/Project Manager
+    KEY_JOURNAL = 0x242, // AL Log/Journal/Timecard
+    KEY_CONTROLPANEL = 0x243, // AL Control Panel
+    KEY_APPSELECT = 0x244, // AL Select Task/Application
+    KEY_SCREENSAVER = 0x245, // AL Screen Saver
+    KEY_VOICECOMMAND = 0x246, // Listening Voice Command
+    KEY_ASSISTANT = 0x247, // AL Context-aware desktop assistant
+    KEY_KBD_LAYOUT_NEXT = 0x248, // AC Next Keyboard Layout Select
+    KEY_EMOJI_PICKER = 0x249, // Show/hide emoji picker (HUTRR101)
+    KEY_DICTATE = 0x24a, // Start or Stop Voice Dictation Session (HUTRR99)
+    KEY_CAMERA_ACCESS_ENABLE = 0x24b, // Enables programmatic access to camera devices. (HUTRR72)
+    KEY_CAMERA_ACCESS_DISABLE = 0x24c, // Disables programmatic access to camera devices. (HUTRR72)
+    KEY_CAMERA_ACCESS_TOGGLE = 0x24d, // Toggles the current state of the camera access control. (HUTRR72)
+    KEY_ACCESSIBILITY = 0x24e, // Toggles the system bound accessibility UI/command (HUTRR116)
+    KEY_DO_NOT_DISTURB = 0x24f, // Toggles the system-wide "Do Not Disturb" control (HUTRR94)
 
-    KEY_BRIGHTNESS_MIN = 0x250,	// Set Brightness to Minimum
-    KEY_BRIGHTNESS_MAX = 0x251,	// Set Brightness to Maximum
+    KEY_BRIGHTNESS_MIN = 0x250, // Set Brightness to Minimum
+    KEY_BRIGHTNESS_MAX = 0x251, // Set Brightness to Maximum
 
     KEY_KBDINPUTASSIST_PREV = 0x260,
     KEY_KBDINPUTASSIST_NEXT = 0x261,
@@ -772,7 +771,7 @@ pub const Key = enum(u16) {
     // We avoid low common keys in module aliases so they don't get huge.
     const MIN_INTERESTING = @This().KEY_MUTE;
     const MAX = 0x2ff;
-    const CNT = (MAX+1);
+    const CNT = (MAX + 1);
 };
 
 pub const RelativeAxis = enum(u8) {
@@ -796,7 +795,7 @@ pub const RelativeAxis = enum(u8) {
     HWHEEL_HI_RES = 0x0c,
 
     const MAX = 0x0f;
-    const CNT = (MAX+1);
+    const CNT = (MAX + 1);
 };
 
 pub const AbsoluteAxis = enum(u8) {
@@ -837,48 +836,48 @@ pub const AbsoluteAxis = enum(u8) {
     // the situation described above.
     RESERVED = 0x2e,
 
-    MT_SLOT = 0x2f,	// MT slot being modified
-    MT_TOUCH_MAJOR = 0x30,	// Major axis of touching ellipse
-    MT_TOUCH_MINOR = 0x31,	// Minor axis (omit if circular)
-    MT_WIDTH_MAJOR = 0x32,	// Major axis of approaching ellipse
-    MT_WIDTH_MINOR = 0x33,	// Minor axis (omit if circular)
-    MT_ORIENTATION = 0x34,	// Ellipse orientation
-    MT_POSITION_X = 0x35,	// Center X touch position
-    MT_POSITION_Y = 0x36,	// Center Y touch position
-    MT_TOOL_TYPE = 0x37,	// Type of touching device
-    MT_BLOB_ID = 0x38,	// Group a set of packets as a blob
-    MT_TRACKING_ID = 0x39,	// Unique ID of initiated contact
-    MT_PRESSURE = 0x3a,	// Pressure on contact area
-    MT_DISTANCE = 0x3b,	// Contact hover distance
-    MT_TOOL_X = 0x3c,	// Center X tool position
-    MT_TOOL_Y = 0x3d,	// Center Y tool position
+    MT_SLOT = 0x2f, // MT slot being modified
+    MT_TOUCH_MAJOR = 0x30, // Major axis of touching ellipse
+    MT_TOUCH_MINOR = 0x31, // Minor axis (omit if circular)
+    MT_WIDTH_MAJOR = 0x32, // Major axis of approaching ellipse
+    MT_WIDTH_MINOR = 0x33, // Minor axis (omit if circular)
+    MT_ORIENTATION = 0x34, // Ellipse orientation
+    MT_POSITION_X = 0x35, // Center X touch position
+    MT_POSITION_Y = 0x36, // Center Y touch position
+    MT_TOOL_TYPE = 0x37, // Type of touching device
+    MT_BLOB_ID = 0x38, // Group a set of packets as a blob
+    MT_TRACKING_ID = 0x39, // Unique ID of initiated contact
+    MT_PRESSURE = 0x3a, // Pressure on contact area
+    MT_DISTANCE = 0x3b, // Contact hover distance
+    MT_TOOL_X = 0x3c, // Center X tool position
+    MT_TOOL_Y = 0x3d, // Center Y tool position
 
     const MAX = 0x3f;
-    const CNT = (MAX+1);
+    const CNT = (MAX + 1);
 };
 
 pub const SwitchEventType = enum(u8) {
-    LID = 0x00,  // set = lid shut
-    TABLET_MODE = 0x01,  // set = tablet mode
-    HEADPHONE_INSERT = 0x02,  // set = inserted
-    RFKILL_ALL = 0x03,  // rfkill master switch, type "any" set = radio enabled
+    LID = 0x00, // set = lid shut
+    TABLET_MODE = 0x01, // set = tablet mode
+    HEADPHONE_INSERT = 0x02, // set = inserted
+    RFKILL_ALL = 0x03, // rfkill master switch, type "any" set = radio enabled
     //RADIO = 0x03,   // = RFKILL_ALL, deprecated
-    MICROPHONE_INSERT = 0x04,  // set = inserted
-    DOCK = 0x05,  // set = plugged into dock
-    LINEOUT_INSERT = 0x06,  // set = inserted
-    JACK_PHYSICAL_INSERT = 0x07,  // set = mechanical switch set
-    VIDEOOUT_INSERT = 0x08,  // set = inserted
-    CAMERA_LENS_COVER = 0x09,  // set = lens covered
-    KEYPAD_SLIDE = 0x0a,  // set = keypad slide out
-    FRONT_PROXIMITY = 0x0b,  // set = front proximity sensor active
-    ROTATE_LOCK = 0x0c,  // set = rotate locked/disabled
-    LINEIN_INSERT = 0x0d,  // set = inserted
-    MUTE_DEVICE = 0x0e,  // set = device disabled
-    PEN_INSERTED = 0x0f,  // set = pen inserted
-    MACHINE_COVER = 0x10,  // set = cover closed
+    MICROPHONE_INSERT = 0x04, // set = inserted
+    DOCK = 0x05, // set = plugged into dock
+    LINEOUT_INSERT = 0x06, // set = inserted
+    JACK_PHYSICAL_INSERT = 0x07, // set = mechanical switch set
+    VIDEOOUT_INSERT = 0x08, // set = inserted
+    CAMERA_LENS_COVER = 0x09, // set = lens covered
+    KEYPAD_SLIDE = 0x0a, // set = keypad slide out
+    FRONT_PROXIMITY = 0x0b, // set = front proximity sensor active
+    ROTATE_LOCK = 0x0c, // set = rotate locked/disabled
+    LINEIN_INSERT = 0x0d, // set = inserted
+    MUTE_DEVICE = 0x0e, // set = device disabled
+    PEN_INSERTED = 0x0f, // set = pen inserted
+    MACHINE_COVER = 0x10, // set = cover closed
 
     const MAX = 0x10;
-    const CNT = (MAX+1);
+    const CNT = (MAX + 1);
 };
 
 pub const MiscEventType = enum(u8) {
@@ -890,7 +889,7 @@ pub const MiscEventType = enum(u8) {
     TIMESTAMP = 0x05,
 
     const MAX = 0x07;
-    const CNT = (MAX+1);
+    const CNT = (MAX + 1);
 };
 
 pub const LED = enum(u8) {
@@ -907,7 +906,7 @@ pub const LED = enum(u8) {
     CHARGING = 0x0a,
 
     const MAX = 0x0f;
-    const CNT = (MAX+1);
+    const CNT = (MAX + 1);
 };
 
 pub const Repeat = enum(u8) {
@@ -915,7 +914,7 @@ pub const Repeat = enum(u8) {
     PERIOD = 0x01,
 
     const MAX = 0x01;
-    const CNT = (MAX+1);
+    const CNT = (MAX + 1);
 };
 
 pub const Sound = enum(u8) {
@@ -923,5 +922,5 @@ pub const Sound = enum(u8) {
     BELL = 0x01,
     TONE = 0x02,
     const MAX = 0x07;
-    const CNT = (MAX+1);
+    const CNT = (MAX + 1);
 };
