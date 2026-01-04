@@ -10,6 +10,7 @@ const hit = @import("hit.zig");
 const Sphere = @import("Sphere.zig");
 const Camera = @import("Camera.zig");
 const util = @import("util.zig");
+const mat = @import("material.zig");
 
 pub fn main() !void {
     var debug_allocator: std.heap.DebugAllocator(.{}) = .init;
@@ -29,9 +30,16 @@ pub fn main() !void {
 
     util.init();
 
+    var material_ground = mat.Lambertian{ .albedo = Vec3.init(0.8, 0.8, 0.0) };
+    var material_center = mat.Lambertian{ .albedo = Vec3.init(0.1, 0.2, 0.5) };
+    var material_left = mat.Metal.init(Vec3.init(0.8, 0.8, 0.8), 0.3);
+    var material_right = mat.Metal.init(Vec3.init(0.8, 0.6, 0.2), 1);
+
     var world: hit.List = .{};
-    try world.add(allocator, &Sphere.init(Vec3.init(0, 0, -1), 0.5).hittable);
-    try world.add(allocator, &Sphere.init(Vec3.init(0, -100.5, -1), 100).hittable);
+    try world.add(allocator, &Sphere.init(Vec3.init(0.0, -100.5, -1.0), 100.0, &material_ground.material).hittable);
+    try world.add(allocator, &Sphere.init(Vec3.init(0.0, 0.0, -1.2), 0.5, &material_center.material).hittable);
+    try world.add(allocator, &Sphere.init(Vec3.init(-1.0, 0.0, -1.0), 0.5, &material_left.material).hittable);
+    try world.add(allocator, &Sphere.init(Vec3.init(1.0, 0.0, -1.0), 0.5, &material_right.material).hittable);
     defer world.free(allocator);
 
     var camera = try Camera.init(allocator);

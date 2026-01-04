@@ -2,17 +2,26 @@ const Vec3 = @import("Vec3.zig");
 const Ray = @import("Ray.zig");
 const hit = @import("hit.zig");
 const Interval = @import("Interval.zig");
+const mat = @import("material.zig");
+
+const Material = mat.Material;
 
 const Sphere = @This();
 
 hittable: hit.Hittable = .{ .hit_fn = isHit },
 center: Vec3 = Vec3.zero,
 radius: f64 = 0,
+material: *Material,
 
-pub fn init(center: Vec3, radius: f64) Sphere {
+pub fn init(
+    center: Vec3,
+    radius: f64,
+    material: *Material,
+) Sphere {
     return .{
         .center = center,
-        .radius = radius,
+        .radius = @max(0, radius),
+        .material = material,
     };
 }
 
@@ -47,6 +56,7 @@ pub fn isHit(
     record.point = ray.at(record.t);
     const outward_normal = (record.point.sub(self.center)).div(self.radius);
     record.setFaceNormal(ray, outward_normal);
+    record.material = self.material;
 
     return true;
 }

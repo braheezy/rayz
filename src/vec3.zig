@@ -100,3 +100,12 @@ pub fn neg(self: Vec3) Vec3 {
 pub fn unit(self: Vec3) Vec3 {
     return self.div(self.length());
 }
+
+pub fn nearZero(self: Vec3) bool {
+    const s = 1e-8;
+    return @abs(self.v[0]) < s and @abs(self.v[1]) < s and @abs(self.v[2]) < s;
+}
+
+pub fn reflect(self: Vec3, normal: Vec3) Vec3 {
+    return self.sub(normal.mul(self.dot(normal) * 2));
+}

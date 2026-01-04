@@ -2,12 +2,16 @@ const std = @import("std");
 const Vec3 = @import("Vec3.zig");
 const Ray = @import("Ray.zig");
 const Interval = @import("Interval.zig");
+const mat = @import("material.zig");
+
+const Material = mat.Material;
 
 pub const Record = struct {
     point: Vec3 = Vec3.zero,
     normal: Vec3 = Vec3.zero,
     t: f64 = 0,
     front_face: bool = false,
+    material: *Material = undefined,
 
     pub fn setFaceNormal(self: *Record, ray: Ray, outward_normal: Vec3) void {
         // Sets the hit record normal vector.

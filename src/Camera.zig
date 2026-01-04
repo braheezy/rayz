@@ -7,6 +7,7 @@ const Vec3 = @import("Vec3.zig");
 const Interval = @import("Interval.zig");
 const platform = @import("platform");
 const util = @import("util.zig");
+const mat = @import("material.zig");
 
 const Camera = @This();
 
@@ -122,8 +123,12 @@ fn rayColor(ray: Ray, depth: u32, world: *const hit.Hittable) Vec3 {
     if (depth <= 0) return Vec3.zero;
     var rec: hit.Record = undefined;
     if (world.hit(ray, Interval.init(0.001, std.math.inf(f64)), &rec)) {
-        const direction = rec.normal.add(Vec3.initRandomUnitVector());
-        return rayColor(Ray.init(rec.point, direction), depth - 1, world).mul(0.1);
+        var scattered: Ray = undefined;
+        var attenuation: Vec3 = undefined;
+        if (rec.material.scatter(ray, rec, &attenuation, &scattered)) {
+            return attenuation.mulV(rayColor(scattered, depth - 1, world));
+        }
+        return Vec3.zero;
     }
 
     const unit_dir = ray.direction.unit();
