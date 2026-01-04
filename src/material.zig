@@ -38,7 +38,7 @@ pub const Lambertian = struct {
 
     pub fn scatter(
         material: *const Material,
-        _: Ray,
+        ray_in: Ray,
         record: hit.Record,
         attenuation: *Vec3,
         scattered: *Ray,
@@ -50,7 +50,7 @@ pub const Lambertian = struct {
         if (scatter_direction.nearZero()) {
             scatter_direction = record.normal;
         }
-        scattered.* = Ray.init(record.point, scatter_direction);
+        scattered.* = Ray.initWithTime(record.point, scatter_direction, ray_in.time);
         attenuation.* = self.albedo;
         return true;
     }
@@ -78,7 +78,7 @@ pub const Metal = struct {
         const self: *const Metal = @alignCast(@fieldParentPtr("material", material));
         var reflected = ray_in.direction.reflect(record.normal);
         reflected = reflected.unit().add(Vec3.initRandomUnitVector().mul(self.fuzz));
-        scattered.* = Ray.init(record.point, reflected);
+        scattered.* = Ray.initWithTime(record.point, reflected, ray_in.time);
         attenuation.* = self.albedo;
         return scattered.direction.dot(record.normal) > 0;
     }
@@ -115,7 +115,7 @@ pub const Dielectric = struct {
             unit_direction.reflect(record.normal)
         else
             unit_direction.refract(record.normal, ri);
-        scattered.* = Ray.init(record.point, direction);
+        scattered.* = Ray.initWithTime(record.point, direction, ray_in.time);
         return true;
     }
 

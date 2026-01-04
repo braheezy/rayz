@@ -55,17 +55,20 @@ pub fn main() !void {
                     const albedo = Vec3.initRandom().mulV(Vec3.initRandom());
                     var m = try mat.Lambertian.init(al, albedo);
                     sphere_material = &m.material;
+                    const center2 = center.add(Vec3.init(0, util.randomInRange(0, 0.5), 0));
+                    try world.add(al, &(try Sphere.initMoving(al, center, center2, 0.2, sphere_material)).hittable);
                 } else if (choose_mat < 0.95) {
                     // metal
                     const albedo = Vec3.initRandomInRange(0.5, 1);
                     const fuzz = util.randomInRange(0, 0.5);
                     var m = try mat.Metal.init(al, albedo, fuzz);
                     sphere_material = &m.material;
+                    try world.add(al, &(try Sphere.init(al, center, 0.2, sphere_material)).hittable);
                 } else {
                     var m = try mat.Dielectric.init(al, 1.5);
                     sphere_material = &m.material;
+                    try world.add(al, &(try Sphere.init(al, center, 0.2, sphere_material)).hittable);
                 }
-                try world.add(al, &(try Sphere.init(al, center, 0.2, sphere_material)).hittable);
             }
         }
     }
@@ -80,8 +83,8 @@ pub fn main() !void {
     var camera = try Camera.init(allocator);
     defer camera.deinit();
     camera.aspect_ratio = 16.0 / 9.0;
-    camera.image_width = 1200;
-    camera.samples_per_pixel = 500;
+    camera.image_width = 600;
+    camera.samples_per_pixel = 30;
     camera.max_depth = 50;
     camera.vfov = 20;
     camera.look_from = Vec3.init(13, 2, 3);

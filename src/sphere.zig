@@ -10,7 +10,7 @@ const Material = mat.Material;
 const Sphere = @This();
 
 hittable: hit.Hittable = .{ .hit_fn = isHit },
-center: Vec3 = Vec3.zero,
+center: Ray = undefined,
 radius: f64 = 0,
 material: *Material,
 
@@ -22,7 +22,23 @@ pub fn init(
 ) !*Sphere {
     const sphere = try allocator.create(Sphere);
     sphere.* = .{
-        .center = center,
+        .center = Ray.init(center, Vec3.zero),
+        .radius = @max(0, radius),
+        .material = material,
+    };
+    return sphere;
+}
+
+pub fn initMoving(
+    allocator: std.mem.Allocator,
+    center1: Vec3,
+    center2: Vec3,
+    radius: f64,
+    material: *Material,
+) !*Sphere {
+    const sphere = try allocator.create(Sphere);
+    sphere.* = .{
+        .center = Ray.init(center1, center2.sub(center1)),
         .radius = @max(0, radius),
         .material = material,
     };
@@ -36,7 +52,8 @@ pub fn isHit(
     record: *hit.Record,
 ) bool {
     const self: *const Sphere = @alignCast(@fieldParentPtr("hittable", hittable));
-    const oc = self.center.sub(ray.origin);
+    const current_center = self.center.at(ray.time);
+    const oc = current_center.sub(ray.origin);
     const a = ray.direction.lengthSquared();
     const h = ray.direction.dot(oc);
     const c = oc.lengthSquared() - (self.radius * self.radius);
@@ -58,7 +75,7 @@ pub fn isHit(
 
     record.t = root;
     record.point = ray.at(record.t);
-    const outward_normal = (record.point.sub(self.center)).div(self.radius);
+    const outward_normal = (record.point.sub(current_center)).div(self.radius);
     record.setFaceNormal(ray, outward_normal);
     record.material = self.material;
 
