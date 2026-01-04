@@ -34,14 +34,14 @@ pub fn main() !void {
     var material_center = mat.Lambertian{ .albedo = Vec3.init(0.1, 0.2, 0.5) };
     var material_left = mat.Dielectric{ .refraction_index = 1.5 };
     var material_bubble = mat.Dielectric{ .refraction_index = 1.00 / 1.50 };
-    var material_right = mat.Metal.init(Vec3.init(0.8, 0.6, 0.2), 1);
+    var material_right = mat.Metal.init(Vec3.init(0.8, 0.6, 0.2), 1.0);
 
     var world: hit.List = .{};
-    try world.add(allocator, &Sphere.init(Vec3.init(0.0, -100.5, -1.0), 100.0, &material_ground.material).hittable);
-    try world.add(allocator, &Sphere.init(Vec3.init(0.0, 0.0, -1.2), 0.5, &material_center.material).hittable);
-    try world.add(allocator, &Sphere.init(Vec3.init(-1.0, 0.0, -1.0), 0.5, &material_left.material).hittable);
-    try world.add(allocator, &Sphere.init(Vec3.init(-1.0, 0.0, -1.0), 0.4, &material_bubble.material).hittable);
-    try world.add(allocator, &Sphere.init(Vec3.init(1.0, 0.0, -1.0), 0.5, &material_right.material).hittable);
+    try world.add(allocator, &Sphere.init(Vec3.init(0, -100.5, -1.0), 100.0, &material_ground.material).hittable);
+    try world.add(allocator, &Sphere.init(Vec3.init(0, 0, -1.2), 0.5, &material_center.material).hittable);
+    try world.add(allocator, &Sphere.init(Vec3.init(-1, 0, -1), 0.5, &material_left.material).hittable);
+    try world.add(allocator, &Sphere.init(Vec3.init(-1, 0, -1), 0.4, &material_bubble.material).hittable);
+    try world.add(allocator, &Sphere.init(Vec3.init(1, 0, -1), 0.5, &material_right.material).hittable);
     defer world.free(allocator);
 
     var camera = try Camera.init(allocator);
@@ -50,6 +50,10 @@ pub fn main() !void {
     camera.image_width = 800;
     camera.samples_per_pixel = 100;
     camera.max_depth = 50;
+    camera.vfov = 90;
+    camera.look_from = Vec3.init(-2, 2, 1);
+    camera.look_at = Vec3.init(0, 0, -1);
+    camera.vup = Vec3.init(0, 1, 0);
     try camera.render(&world.hittable);
 
     // Create platform context

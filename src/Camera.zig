@@ -34,6 +34,18 @@ samples_per_pixel: u32 = 10,
 pixel_samples_scale: f64 = 1.0,
 // Maximum number of ray bounces into scene
 max_depth: u32 = 10,
+// Vertical view angle (field of view)
+vfov: f64 = 90,
+// Point camera is looking from
+look_from: Vec3 = Vec3.zero,
+// Point camera is looking at
+look_at: Vec3 = Vec3.init(0, 0, -1),
+// Camera-relative "up" direction
+vup: Vec3 = Vec3.init(0, 1, 0),
+// Camera frame basis vectors
+u: Vec3 = Vec3.zero,
+v: Vec3 = Vec3.zero,
+w: Vec3 = Vec3.zero,
 
 pub fn init(allocator: std.mem.Allocator) !*Camera {
     const cam = try allocator.create(Camera);
@@ -100,21 +112,30 @@ fn initialize(self: *Camera) void {
     self.pixel_samples_scale = 1.0 / @as(f64, @floatFromInt(self.samples_per_pixel));
     self.center = Vec3.zero;
 
+    self.center = self.look_from;
+
     // Determine viewport dimensions.
-    const focal_length: f32 = 1.0;
-    const viewport_height = 2.0;
+    const focal_length: f64 = self.look_from.sub(self.look_at).length();
+    const theta = std.math.degreesToRadians(self.vfov);
+    const h = std.math.tan(theta / 2);
+    const viewport_height = 2.0 * h * focal_length;
     const viewport_width = viewport_height * self.image_width / self.image_height;
 
+    // Calculate the u,v,w unit basis vectors for the camera coordinate frame.
+    self.w = self.look_from.sub(self.look_at).unit();
+    self.u = self.vup.cross(self.w).unit();
+    self.v = self.w.cross(self.u);
+
     // Calculate the vectors across the horizontal and down the vertical viewport edges.
-    const viewport_u = Vec3.init(viewport_width, 0, 0);
-    const viewport_v = Vec3.init(0, -viewport_height, 0);
+    const viewport_u = self.u.mul(viewport_width); // Vector across viewport horizontal edge
+    const viewport_v = self.v.neg().mul(viewport_height); // Vector down viewport vertical edge
 
     // Calculate the horizontal and vertical delta vectors from pixel to pixel.
     self.pixel_delta_u = viewport_u.div(self.image_width);
     self.pixel_delta_v = viewport_v.div(self.image_height);
 
     // Calculate the location of the upper left pixel.
-    const viewport_upper_left = self.center.sub(Vec3.init(0, 0, focal_length)).sub(viewport_u.div(2)).sub(viewport_v.div(2));
+    const viewport_upper_left = self.center.sub(self.w.mul(focal_length)).sub(viewport_u.div(2)).sub(viewport_v.div(2));
     self.pixel00_loc = viewport_upper_left.add(self.pixel_delta_u.add(self.pixel_delta_v).mul(0.5));
 }
 

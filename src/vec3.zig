@@ -109,3 +109,18 @@ pub fn nearZero(self: Vec3) bool {
 pub fn reflect(self: Vec3, normal: Vec3) Vec3 {
     return self.sub(normal.mul(self.dot(normal) * 2));
 }
+
+pub fn refract(self: Vec3, normal: Vec3, etai_over_etat: f64) Vec3 {
+    const cos_theta = @min(self.neg().dot(normal), 1);
+    const r_out_perp = self.add(normal.mul(cos_theta)).mul(etai_over_etat);
+    const r_out_parallel = normal.mul(-@sqrt(@abs(1 - r_out_perp.lengthSquared())));
+    return r_out_perp.add(r_out_parallel);
+}
+
+pub fn cross(u: Vec3, v: Vec3) Vec3 {
+    return Vec3.init(
+        u.v[1] * v.v[2] - u.v[2] * v.v[1],
+        u.v[2] * v.v[0] - u.v[0] * v.v[2],
+        u.v[0] * v.v[1] - u.v[1] * v.v[0],
+    );
+}
