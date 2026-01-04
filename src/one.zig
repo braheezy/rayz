@@ -28,34 +28,67 @@ pub fn main() !void {
         }
     };
 
+    var arena = std.heap.ArenaAllocator.init(allocator);
+    defer arena.deinit();
+    const al = arena.allocator();
+
     util.init();
 
-    var material_ground = mat.Lambertian{ .albedo = Vec3.init(0.8, 0.8, 0.0) };
-    var material_center = mat.Lambertian{ .albedo = Vec3.init(0.1, 0.2, 0.5) };
-    var material_left = mat.Dielectric{ .refraction_index = 1.5 };
-    var material_bubble = mat.Dielectric{ .refraction_index = 1.00 / 1.50 };
-    var material_right = mat.Metal.init(Vec3.init(0.8, 0.6, 0.2), 1.0);
+    var material_ground = try mat.Lambertian.init(al, Vec3.init(0.5, 0.5, 0.5));
 
     var world: hit.List = .{};
-    try world.add(allocator, &Sphere.init(Vec3.init(0, -100.5, -1.0), 100.0, &material_ground.material).hittable);
-    try world.add(allocator, &Sphere.init(Vec3.init(0, 0, -1.2), 0.5, &material_center.material).hittable);
-    try world.add(allocator, &Sphere.init(Vec3.init(-1, 0, -1), 0.5, &material_left.material).hittable);
-    try world.add(allocator, &Sphere.init(Vec3.init(-1, 0, -1), 0.4, &material_bubble.material).hittable);
-    try world.add(allocator, &Sphere.init(Vec3.init(1, 0, -1), 0.5, &material_right.material).hittable);
-    defer world.free(allocator);
+    defer world.free(al);
+    try world.add(al, &(try Sphere.init(al, Vec3.init(0, -1000, -1.0), 1000, &material_ground.material)).hittable);
+    var a: i32 = -11;
+    while (a < 11) : (a += 1) {
+        var b: i32 = -11;
+        while (b < 11) : (b += 1) {
+            const af: f64 = @floatFromInt(a);
+            const bf: f64 = @floatFromInt(b);
+            const choose_mat = util.random();
+            const center = Vec3.init(af + 0.9 * util.random(), 0.2, bf + 0.9 * util.random());
+
+            if (center.sub(Vec3.init(4, 0.2, 0)).length() > 0.9) {
+                var sphere_material: *mat.Material = undefined;
+                if (choose_mat < 0.8) {
+                    // Diffuse
+                    const albedo = Vec3.initRandom().mulV(Vec3.initRandom());
+                    var m = try mat.Lambertian.init(al, albedo);
+                    sphere_material = &m.material;
+                } else if (choose_mat < 0.95) {
+                    // metal
+                    const albedo = Vec3.initRandomInRange(0.5, 1);
+                    const fuzz = util.randomInRange(0, 0.5);
+                    var m = try mat.Metal.init(al, albedo, fuzz);
+                    sphere_material = &m.material;
+                } else {
+                    var m = try mat.Dielectric.init(al, 1.5);
+                    sphere_material = &m.material;
+                }
+                try world.add(al, &(try Sphere.init(al, center, 0.2, sphere_material)).hittable);
+            }
+        }
+    }
+
+    var material1 = try mat.Dielectric.init(al, 1.5);
+    try world.add(al, &(try Sphere.init(al, Vec3.init(0, 1, 0), 1, &material1.material)).hittable);
+    var material2 = try mat.Lambertian.init(al, Vec3.init(0.4, 0.2, 0.1));
+    try world.add(al, &(try Sphere.init(al, Vec3.init(-4, 1, 0), 1, &material2.material)).hittable);
+    var material3 = try mat.Metal.init(al, Vec3.init(0.7, 0.6, 0.5), 0);
+    try world.add(al, &(try Sphere.init(al, Vec3.init(4, 1, 0), 1, &material3.material)).hittable);
 
     var camera = try Camera.init(allocator);
     defer camera.deinit();
     camera.aspect_ratio = 16.0 / 9.0;
-    camera.image_width = 800;
-    camera.samples_per_pixel = 100;
+    camera.image_width = 1200;
+    camera.samples_per_pixel = 500;
     camera.max_depth = 50;
     camera.vfov = 20;
-    camera.look_from = Vec3.init(-2, 2, 1);
-    camera.look_at = Vec3.init(0, 0, -1);
+    camera.look_from = Vec3.init(13, 2, 3);
+    camera.look_at = Vec3.zero;
     camera.vup = Vec3.init(0, 1, 0);
-    camera.defocus_angle = 10;
-    camera.focus_distance = 3.4;
+    camera.defocus_angle = 0.6;
+    camera.focus_distance = 10;
 
     try camera.render(&world.hittable);
 

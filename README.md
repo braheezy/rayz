@@ -6,6 +6,13 @@ Raytracing experiments.
 
 Run the main program:
 
+```bash
+zig build one
+# Or
+zig build basic
 ```
-zig build run
-```
+
+## Demos
+
+Final scene from Ray Tracing in One Weekend (took 1588.869s to render):
+![Final Scene](./demo.png)

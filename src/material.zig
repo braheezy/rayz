@@ -30,6 +30,12 @@ pub const Lambertian = struct {
 
     material: Material = .{ .scatter_fn = scatter },
 
+    pub fn init(allocator: std.mem.Allocator, albedo: Vec3) !*Lambertian {
+        const lambertian = try allocator.create(Lambertian);
+        lambertian.* = .{ .albedo = albedo };
+        return lambertian;
+    }
+
     pub fn scatter(
         material: *const Material,
         _: Ray,
@@ -56,8 +62,10 @@ pub const Metal = struct {
 
     material: Material = .{ .scatter_fn = scatter },
 
-    pub fn init(albedo: Vec3, fuzz: f64) Metal {
-        return Metal{ .albedo = albedo, .fuzz = if (fuzz < 1.0) fuzz else 1 };
+    pub fn init(allocator: std.mem.Allocator, albedo: Vec3, fuzz: f64) !*Metal {
+        const metal = try allocator.create(Metal);
+        metal.* = .{ .albedo = albedo, .fuzz = if (fuzz < 1.0) fuzz else 1 };
+        return metal;
     }
 
     pub fn scatter(
@@ -82,6 +90,12 @@ pub const Dielectric = struct {
     refraction_index: f64,
 
     material: Material = .{ .scatter_fn = scatter },
+
+    pub fn init(allocator: std.mem.Allocator, refraction_index: f64) !*Dielectric {
+        const dielectric = try allocator.create(Dielectric);
+        dielectric.* = .{ .refraction_index = refraction_index };
+        return dielectric;
+    }
 
     pub fn scatter(
         material: *const Material,

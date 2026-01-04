@@ -1,3 +1,4 @@
+const std = @import("std");
 const Vec3 = @import("Vec3.zig");
 const Ray = @import("Ray.zig");
 const hit = @import("hit.zig");
@@ -14,15 +15,18 @@ radius: f64 = 0,
 material: *Material,
 
 pub fn init(
+    allocator: std.mem.Allocator,
     center: Vec3,
     radius: f64,
     material: *Material,
-) Sphere {
-    return .{
+) !*Sphere {
+    const sphere = try allocator.create(Sphere);
+    sphere.* = .{
         .center = center,
         .radius = @max(0, radius),
         .material = material,
     };
+    return sphere;
 }
 
 pub fn isHit(
