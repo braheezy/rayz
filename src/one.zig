@@ -32,13 +32,15 @@ pub fn main() !void {
 
     var material_ground = mat.Lambertian{ .albedo = Vec3.init(0.8, 0.8, 0.0) };
     var material_center = mat.Lambertian{ .albedo = Vec3.init(0.1, 0.2, 0.5) };
-    var material_left = mat.Metal.init(Vec3.init(0.8, 0.8, 0.8), 0.3);
+    var material_left = mat.Dielectric{ .refraction_index = 1.5 };
+    var material_bubble = mat.Dielectric{ .refraction_index = 1.00 / 1.50 };
     var material_right = mat.Metal.init(Vec3.init(0.8, 0.6, 0.2), 1);
 
     var world: hit.List = .{};
     try world.add(allocator, &Sphere.init(Vec3.init(0.0, -100.5, -1.0), 100.0, &material_ground.material).hittable);
     try world.add(allocator, &Sphere.init(Vec3.init(0.0, 0.0, -1.2), 0.5, &material_center.material).hittable);
     try world.add(allocator, &Sphere.init(Vec3.init(-1.0, 0.0, -1.0), 0.5, &material_left.material).hittable);
+    try world.add(allocator, &Sphere.init(Vec3.init(-1.0, 0.0, -1.0), 0.4, &material_bubble.material).hittable);
     try world.add(allocator, &Sphere.init(Vec3.init(1.0, 0.0, -1.0), 0.5, &material_right.material).hittable);
     defer world.free(allocator);
 
