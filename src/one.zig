@@ -50,10 +50,13 @@ pub fn main() !void {
     camera.image_width = 800;
     camera.samples_per_pixel = 100;
     camera.max_depth = 50;
-    camera.vfov = 90;
+    camera.vfov = 20;
     camera.look_from = Vec3.init(-2, 2, 1);
     camera.look_at = Vec3.init(0, 0, -1);
     camera.vup = Vec3.init(0, 1, 0);
+    camera.defocus_angle = 10;
+    camera.focus_distance = 3.4;
+
     try camera.render(&world.hittable);
 
     // Create platform context

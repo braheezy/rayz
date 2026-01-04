@@ -39,6 +39,12 @@ pub fn initRandomOnHemisphere(normal: Vec3) Vec3 {
         return on_unit_sphere.neg();
     }
 }
+pub fn initRandomInUnitDisk() Vec3 {
+    while (true) {
+        const p = Vec3.init(util.randomInRange(-1, 1), util.randomInRange(-1, 1), 0);
+        if (p.lengthSquared() < 1) return p;
+    }
+}
 
 pub fn x(self: Vec3) f64 {
     return self.v[0];
