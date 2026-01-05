@@ -3,6 +3,7 @@ const Vec3 = @import("Vec3.zig");
 const Ray = @import("Ray.zig");
 const Interval = @import("Interval.zig");
 const mat = @import("material.zig");
+const AABB = @import("AABB.zig");
 
 const Material = mat.Material;
 
@@ -25,27 +26,35 @@ pub const Hittable = struct {
     hit_fn: *const fn (
         hittable: *const Hittable,
         ray: Ray,
-        ray_t: Interval,
+        ray_t: *Interval,
         record: *Record,
     ) bool,
+
+    bbox_fn: *const fn (hittable: *const Hittable) AABB = undefined,
 
     pub fn hit(
         self: *const Hittable,
         ray: Ray,
-        ray_t: Interval,
+        ray_t: *Interval,
         record: *Record,
     ) bool {
         return self.hit_fn(self, ray, ray_t, record);
+    }
+
+    pub fn boundingBox(self: *const Hittable) AABB {
+        return self.bbox_fn(self);
     }
 };
 
 pub const List = struct {
     objects: std.ArrayList(*const Hittable) = .empty,
 
-    hittable: Hittable = .{ .hit_fn = isHit },
+    hittable: Hittable = .{ .hit_fn = isHit, .bbox_fn = boundingBox },
+    bbox: AABB = undefined,
 
     pub fn add(self: *List, allocator: std.mem.Allocator, hittable: *const Hittable) !void {
         try self.objects.append(allocator, hittable);
+        self.bbox = AABB.initFromBoxes(self.bbox, hittable.boundingBox());
     }
 
     pub fn free(self: *List, allocator: std.mem.Allocator) void {
@@ -55,7 +64,7 @@ pub const List = struct {
     pub fn isHit(
         hittable: *const Hittable,
         ray: Ray,
-        ray_t: Interval,
+        ray_t: *Interval,
         record: *Record,
     ) bool {
         const self: *const List = @fieldParentPtr("hittable", hittable);
@@ -64,7 +73,8 @@ pub const List = struct {
         var closest_so_far = ray_t.max;
 
         for (self.objects.items) |obj| {
-            if (obj.hit(ray, Interval.init(ray_t.min, closest_so_far), &tmp_record)) {
+            var interval = Interval.init(ray_t.min, closest_so_far);
+            if (obj.hit(ray, &interval, &tmp_record)) {
                 hit_anything = true;
                 closest_so_far = tmp_record.t;
                 record.* = tmp_record;
@@ -74,3 +84,10 @@ pub const List = struct {
         return hit_anything;
     }
 };
+
+pub fn boundingBox(
+    hittable: *const Hittable,
+) AABB {
+    const self: *const List = @alignCast(@fieldParentPtr("hittable", hittable));
+    return self.bbox;
+}

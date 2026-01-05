@@ -155,7 +155,8 @@ fn rayColor(ray: Ray, depth: u32, world: *const hit.Hittable) Vec3 {
     // If we've exceeded the ray bounce limit, no more light is gathered.
     if (depth <= 0) return Vec3.zero;
     var rec: hit.Record = undefined;
-    if (world.hit(ray, Interval.init(0.001, std.math.inf(f64)), &rec)) {
+    var interval = Interval.init(0.001, std.math.inf(f64));
+    if (world.hit(ray, &interval, &rec)) {
         var scattered: Ray = undefined;
         var attenuation: Vec3 = undefined;
         if (rec.material.scatter(ray, rec, &attenuation, &scattered)) {

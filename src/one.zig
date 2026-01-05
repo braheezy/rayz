@@ -11,6 +11,7 @@ const Sphere = @import("Sphere.zig");
 const Camera = @import("Camera.zig");
 const util = @import("util.zig");
 const mat = @import("material.zig");
+const BVHNode = @import("BVH.zig");
 
 pub fn main() !void {
     var debug_allocator: std.heap.DebugAllocator(.{}) = .init;
@@ -83,8 +84,8 @@ pub fn main() !void {
     var camera = try Camera.init(allocator);
     defer camera.deinit();
     camera.aspect_ratio = 16.0 / 9.0;
-    camera.image_width = 600;
-    camera.samples_per_pixel = 30;
+    camera.image_width = 700;
+    camera.samples_per_pixel = 50;
     camera.max_depth = 50;
     camera.vfov = 20;
     camera.look_from = Vec3.init(13, 2, 3);
@@ -93,7 +94,9 @@ pub fn main() !void {
     camera.defocus_angle = 0.6;
     camera.focus_distance = 10;
 
-    try camera.render(&world.hittable);
+    const world_bvh = try BVHNode.initFromList(al, world.objects.items);
+
+    try camera.render(&world_bvh.hittable);
 
     // Create platform context
     const ctx = try platform.Context.create(allocator);
