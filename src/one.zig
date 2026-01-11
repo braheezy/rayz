@@ -40,10 +40,11 @@ pub fn main() !void {
     var camera = try Camera.init(allocator);
     defer camera.deinit();
 
-    switch (3) {
+    switch (4) {
         1 => try bouncingSpheres(al, camera),
         2 => try checkeredSpheres(al, camera),
         3 => try earth(al, camera),
+        4 => try perlinSpheres(al, camera),
         else => unreachable,
     }
 
@@ -55,6 +56,29 @@ pub fn main() !void {
     defer window.destroy();
 
     try run(window, camera.pixels);
+}
+
+fn perlinSpheres(al: std.mem.Allocator, camera: *Camera) !void {
+    var perlin_texture = try tex.Noise.init(al, 4);
+    defer perlin_texture.deinit(al);
+
+    var perlin_surface = try mat.Lambertian.initFromTexture(al, &perlin_texture.texture);
+
+    camera.aspect_ratio = 16.0 / 9.0;
+    camera.image_width = IMAGE_WIDTH;
+    camera.samples_per_pixel = 100;
+    camera.max_depth = 50;
+    camera.vfov = 20;
+    camera.look_from = Vec3.init(13, 2, 3);
+    camera.look_at = Vec3.zero;
+    camera.vup = Vec3.init(0, 1, 0);
+    camera.defocus_angle = 0;
+
+    var world: hit.List = .{};
+    try world.add(al, &(try Sphere.init(al, Vec3.init(0, -1000, 0), 1000, &perlin_surface.material)).hittable);
+    try world.add(al, &(try Sphere.init(al, Vec3.init(0, 2, 0), 2, &perlin_surface.material)).hittable);
+
+    try camera.render(&world.hittable);
 }
 
 fn earth(al: std.mem.Allocator, camera: *Camera) !void {

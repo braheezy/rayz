@@ -2,6 +2,7 @@ const std = @import("std");
 const Vec3 = @import("Vec3.zig");
 const Img = @import("Image.zig");
 const Interval = @import("Interval.zig");
+const Perlin = @import("Perlin.zig");
 
 pub const Texture = struct {
     value_fn: *const fn (texture: *const Texture, u: f64, v: f64, p: Vec3) Vec3,
@@ -95,5 +96,26 @@ pub const Image = struct {
 
         const pixel = im.pixelData(i, j);
         return pixel;
+    }
+};
+
+pub const Noise = struct {
+    texture: Texture = .{ .value_fn = value },
+    scale: f64 = 1.0,
+    noise: Perlin,
+
+    pub fn init(allocator: std.mem.Allocator, scale: f64) !*Noise {
+        const texture = try allocator.create(Noise);
+        texture.* = .{ .noise = Perlin.init(), .scale = scale };
+        return texture;
+    }
+
+    pub fn deinit(self: *Noise, allocator: std.mem.Allocator) void {
+        allocator.destroy(self);
+    }
+
+    pub fn value(texture: *const Texture, _: f64, _: f64, p: Vec3) Vec3 {
+        const self: *const Noise = @alignCast(@fieldParentPtr("texture", texture));
+        return Vec3.init(0.5, 0.5, 0.5).mul(1 + std.math.sin(self.scale * p.z() + 10 * self.noise.turbulence(p, 7)));
     }
 };
