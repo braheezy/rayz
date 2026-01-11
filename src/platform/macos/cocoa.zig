@@ -56,7 +56,11 @@ pub const NSApplicationActivationPolicyRegular: c_long = 0;
 
 // CoreGraphics externs
 pub extern "c" fn CGColorSpaceCreateDeviceRGB() ?*anyopaque;
+pub extern "c" fn CGColorSpaceCreateWithName(name: id) ?*anyopaque;
 pub extern "c" fn CGColorSpaceRelease(space: ?*anyopaque) void;
+
+// CoreGraphics color space names
+pub extern "c" var kCGColorSpaceSRGB: id;
 pub extern "c" fn CGBitmapContextCreate(
     data: ?*anyopaque,
     width: usize,

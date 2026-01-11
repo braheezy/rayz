@@ -77,10 +77,9 @@ pub fn render(self: *Camera, world: *const hit.Hittable) !void {
     var out_writer = out_file.writer(&out_buffer);
     var writer = &out_writer.interface;
 
-    try writer.print("P3\n{d} {d}\n255\n", .{ self.image_width, self.image_height });
-
-    const height: usize = @intFromFloat(self.image_height);
     const width: usize = @intFromFloat(self.image_width);
+    const height: usize = @intFromFloat(self.image_height);
+    try writer.print("P3\n{d} {d}\n255\n", .{ width, height });
 
     // Allocate framebuffer for pixels
     self.pixels = try self.allocator.alloc(platform.util.BGRA, width * height);

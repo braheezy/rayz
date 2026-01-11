@@ -16,6 +16,11 @@ pub fn build(b: *std.Build) void {
     });
     const target_os = target.result.os.tag;
 
+    const zigimg_dependency = b.dependency("zigimg", .{
+        .target = target,
+        .optimize = optimize,
+    });
+
     const platform_mod = b.createModule(.{
         .root_source_file = b.path("src/platform/platform.zig"),
         .target = target,
@@ -23,6 +28,7 @@ pub fn build(b: *std.Build) void {
     });
     basic_mod.addImport("platform", platform_mod);
     one_mod.addImport("platform", platform_mod);
+    one_mod.addImport("zigimg", zigimg_dependency.module("zigimg"));
 
     if (target_os == .macos) {
         // Add zig-objc dependency for macOS

@@ -85,6 +85,7 @@ pub fn isHit(
     record.point = ray.at(record.t);
     const outward_normal = (record.point.sub(current_center)).div(self.radius);
     record.setFaceNormal(ray, outward_normal);
+    record.u, record.v = getUv(outward_normal);
     record.material = self.material;
 
     return true;
@@ -95,4 +96,18 @@ pub fn boundingBox(
 ) AABB {
     const self: *const Sphere = @alignCast(@fieldParentPtr("hittable", hittable));
     return self.bbox;
+}
+
+pub fn getUv(p: Vec3) struct { f64, f64 } {
+    // p: a given point on the sphere of radius one, centered at the origin.
+    // u: returned value [0,1] of angle around the Y axis from X=-1.
+    // v: returned value [0,1] of angle from Y=-1 to Y=+1.
+    //     <1 0 0> yields <0.50 0.50>       <-1  0  0> yields <0.00 0.50>
+    //     <0 1 0> yields <0.50 1.00>       < 0 -1  0> yields <0.50 0.00>
+    //     <0 0 1> yields <0.25 0.50>       < 0  0 -1> yields <0.75 0.50>
+
+    const theta = std.math.acos(-p.y());
+    const phi = std.math.atan2(-p.z(), p.x()) + std.math.pi;
+
+    return .{ phi / (2.0 * std.math.pi), theta / std.math.pi };
 }

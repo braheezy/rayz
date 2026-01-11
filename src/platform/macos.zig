@@ -547,7 +547,8 @@ pub const Window = struct {
         const buffer_size = self.width * self.height;
         self.ram_buffer = try util.gpa.alloc(util.BGRA, buffer_size);
 
-        const color_space = c.CGColorSpaceCreateDeviceRGB();
+        const srgb_name = c.kCGColorSpaceSRGB;
+        const color_space = c.CGColorSpaceCreateWithName(srgb_name);
         if (color_space == null) {
             util.gpa.free(self.ram_buffer.?);
             self.ram_buffer = null;

@@ -11,6 +11,9 @@ pub const Record = struct {
     point: Vec3 = Vec3.zero,
     normal: Vec3 = Vec3.zero,
     t: f64 = 0,
+    // Texture coordinates
+    u: f64 = 0,
+    v: f64 = 0,
     front_face: bool = false,
     material: *Material = undefined,
 
