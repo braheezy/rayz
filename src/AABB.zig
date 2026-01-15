@@ -12,7 +12,8 @@ z: Interval,
 hittable: hit.Hittable = .{ .hit_fn = isHit },
 
 pub fn init(x: Interval, y: Interval, z: Interval) AABB {
-    return .{ .x = x, .y = y, .z = z };
+    const self = AABB{ .x = x, .y = y, .z = z };
+    return padToMinimums(self);
 }
 
 pub fn initFromPoints(a: Vec3, b: Vec3) AABB {
@@ -91,4 +92,14 @@ pub fn longestAxis(self: AABB) usize {
     return if (self.x.size() > self.y.size())
         if (self.x.size() > self.z.size()) 0 else 2
     else if (self.y.size() > self.z.size()) 1 else 2;
+}
+
+// Adjust the AABB so that no side is narrower than some delta, padding if necessary.
+fn padToMinimums(self: AABB) AABB {
+    const delta = 0.0001;
+    return .{
+        .x = if (self.x.size() < delta) self.x.expand(delta) else self.x,
+        .y = if (self.y.size() < delta) self.y.expand(delta) else self.y,
+        .z = if (self.z.size() < delta) self.z.expand(delta) else self.z,
+    };
 }

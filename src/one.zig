@@ -8,6 +8,7 @@ const color = @import("color.zig");
 const Vec3 = @import("Vec3.zig");
 const hit = @import("hit.zig");
 const Sphere = @import("Sphere.zig");
+const Quad = @import("Quad.zig");
 const Camera = @import("Camera.zig");
 const util = @import("util.zig");
 const mat = @import("material.zig");
@@ -40,11 +41,12 @@ pub fn main() !void {
     var camera = try Camera.init(allocator);
     defer camera.deinit();
 
-    switch (4) {
+    switch (5) {
         1 => try bouncingSpheres(al, camera),
         2 => try checkeredSpheres(al, camera),
         3 => try earth(al, camera),
         4 => try perlinSpheres(al, camera),
+        5 => try quads(al, camera),
         else => unreachable,
     }
 
@@ -56,6 +58,33 @@ pub fn main() !void {
     defer window.destroy();
 
     try run(window, camera.pixels);
+}
+
+fn quads(al: std.mem.Allocator, camera: *Camera) !void {
+    const left_red = try mat.Lambertian.init(al, Vec3.init(1, 0.2, 0.2));
+    const back_green = try mat.Lambertian.init(al, Vec3.init(0.2, 1, 0.2));
+    const right_blue = try mat.Lambertian.init(al, Vec3.init(0.2, 0.2, 1));
+    const upper_orange = try mat.Lambertian.init(al, Vec3.init(1, 0.5, 0));
+    const lower_teal = try mat.Lambertian.init(al, Vec3.init(0.2, 0.8, 0.8));
+
+    var world: hit.List = .{};
+    try world.add(al, &(try Quad.init(al, Vec3.init(-3, -2, 5), Vec3.init(0, 0, -4), Vec3.init(0, 4, 0), &left_red.material)).hittable);
+    try world.add(al, &(try Quad.init(al, Vec3.init(-2, -2, 0), Vec3.init(4, 0, 0), Vec3.init(0, 4, 0), &back_green.material)).hittable);
+    try world.add(al, &(try Quad.init(al, Vec3.init(3, -2, 1), Vec3.init(0, 0, 4), Vec3.init(0, 4, 0), &right_blue.material)).hittable);
+    try world.add(al, &(try Quad.init(al, Vec3.init(-2, 3, 1), Vec3.init(4, 0, 0), Vec3.init(0, 0, 4), &upper_orange.material)).hittable);
+    try world.add(al, &(try Quad.init(al, Vec3.init(-2, -3, 5), Vec3.init(4, 0, 0), Vec3.init(0, 0, -4), &lower_teal.material)).hittable);
+
+    camera.aspect_ratio = 1.0;
+    camera.image_width = IMAGE_WIDTH;
+    camera.samples_per_pixel = 100;
+    camera.max_depth = 50;
+    camera.vfov = 80;
+    camera.look_from = Vec3.init(0, 0, 9);
+    camera.look_at = Vec3.zero;
+    camera.vup = Vec3.init(0, 1, 0);
+    camera.defocus_angle = 0;
+
+    try camera.render(&world.hittable);
 }
 
 fn perlinSpheres(al: std.mem.Allocator, camera: *Camera) !void {
