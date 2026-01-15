@@ -41,12 +41,14 @@ pub fn main() !void {
     var camera = try Camera.init(allocator);
     defer camera.deinit();
 
-    switch (5) {
+    switch (7) {
         1 => try bouncingSpheres(al, camera),
         2 => try checkeredSpheres(al, camera),
         3 => try earth(al, camera),
         4 => try perlinSpheres(al, camera),
         5 => try quads(al, camera),
+        6 => try simpleLight(al, camera),
+        7 => try cornellBox(al, camera),
         else => unreachable,
     }
 
@@ -60,12 +62,68 @@ pub fn main() !void {
     try run(window, camera.pixels);
 }
 
+fn cornellBox(al: std.mem.Allocator, camera: *Camera) !void {
+    var red = try mat.Lambertian.init(al, Vec3.init(0.65, 0.05, 0.05));
+    var white = try mat.Lambertian.init(al, Vec3.init(0.73, 0.73, 0.73));
+    var green = try mat.Lambertian.init(al, Vec3.init(0.12, 0.45, 0.15));
+    var light = try mat.DiffuseLight.init(al, Vec3.init(15, 15, 15));
+
+    var world: hit.List = .{};
+    try world.add(al, &(try Quad.init(al, Vec3.init(555, 0, 0), Vec3.init(0, 555, 0), Vec3.init(0, 0, 555), &green.material)).hittable);
+    try world.add(al, &(try Quad.init(al, Vec3.init(0, 0, 0), Vec3.init(0, 555, 0), Vec3.init(0, 0, 555), &red.material)).hittable);
+    try world.add(al, &(try Quad.init(al, Vec3.init(343, 554, 332), Vec3.init(-130, 0, 0), Vec3.init(0, 0, -105), &light.material)).hittable);
+    try world.add(al, &(try Quad.init(al, Vec3.init(0, 0, 0), Vec3.init(555, 0, 0), Vec3.init(0, 0, 555), &white.material)).hittable);
+    try world.add(al, &(try Quad.init(al, Vec3.init(555, 555, 555), Vec3.init(-555, 0, 0), Vec3.init(0, 0, -555), &white.material)).hittable);
+    try world.add(al, &(try Quad.init(al, Vec3.init(0, 0, 555), Vec3.init(555, 0, 0), Vec3.init(0, 555, 0), &white.material)).hittable);
+
+    camera.aspect_ratio = 1.0;
+    camera.image_width = IMAGE_WIDTH;
+    camera.samples_per_pixel = 150;
+    camera.max_depth = 50;
+    camera.vfov = 40;
+    camera.look_from = Vec3.init(278, 278, -800);
+    camera.look_at = Vec3.init(278, 278, 0);
+    camera.vup = Vec3.init(0, 1, 0);
+    camera.defocus_angle = 0;
+    camera.background_color = Vec3.zero;
+
+    try camera.render(&world.hittable);
+}
+
+fn simpleLight(al: std.mem.Allocator, camera: *Camera) !void {
+    var perlin_texture = try tex.Noise.init(al, 4);
+    defer perlin_texture.deinit(al);
+
+    var perlin_surface = try mat.Lambertian.initFromTexture(al, &perlin_texture.texture);
+
+    var world: hit.List = .{};
+    try world.add(al, &(try Sphere.init(al, Vec3.init(0, -1000, 0), 1000, &perlin_surface.material)).hittable);
+    try world.add(al, &(try Sphere.init(al, Vec3.init(0, 2, 0), 2, &perlin_surface.material)).hittable);
+
+    const diffuse_light = try mat.DiffuseLight.init(al, Vec3.init(4, 4, 4));
+    try world.add(al, &(try Sphere.init(al, Vec3.init(0, 7, 0), 2, &diffuse_light.material)).hittable);
+    try world.add(al, &(try Quad.init(al, Vec3.init(3, 1, -2), Vec3.init(2, 0, 0), Vec3.init(0, 2, 0), &diffuse_light.material)).hittable);
+
+    camera.aspect_ratio = 16.0 / 9.0;
+    camera.image_width = IMAGE_WIDTH;
+    camera.samples_per_pixel = 100;
+    camera.max_depth = 50;
+    camera.vfov = 20;
+    camera.look_from = Vec3.init(26, 3, 6);
+    camera.look_at = Vec3.init(0, 2, 0);
+    camera.vup = Vec3.init(0, 1, 0);
+    camera.defocus_angle = 0;
+    camera.background_color = Vec3.zero;
+
+    try camera.render(&world.hittable);
+}
+
 fn quads(al: std.mem.Allocator, camera: *Camera) !void {
-    const left_red = try mat.Lambertian.init(al, Vec3.init(1, 0.2, 0.2));
-    const back_green = try mat.Lambertian.init(al, Vec3.init(0.2, 1, 0.2));
-    const right_blue = try mat.Lambertian.init(al, Vec3.init(0.2, 0.2, 1));
-    const upper_orange = try mat.Lambertian.init(al, Vec3.init(1, 0.5, 0));
-    const lower_teal = try mat.Lambertian.init(al, Vec3.init(0.2, 0.8, 0.8));
+    var left_red = try mat.Lambertian.init(al, Vec3.init(1, 0.2, 0.2));
+    var back_green = try mat.Lambertian.init(al, Vec3.init(0.2, 1, 0.2));
+    var right_blue = try mat.Lambertian.init(al, Vec3.init(0.2, 0.2, 1));
+    var upper_orange = try mat.Lambertian.init(al, Vec3.init(1, 0.5, 0));
+    var lower_teal = try mat.Lambertian.init(al, Vec3.init(0.2, 0.8, 0.8));
 
     var world: hit.List = .{};
     try world.add(al, &(try Quad.init(al, Vec3.init(-3, -2, 5), Vec3.init(0, 0, -4), Vec3.init(0, 4, 0), &left_red.material)).hittable);
@@ -83,6 +141,7 @@ fn quads(al: std.mem.Allocator, camera: *Camera) !void {
     camera.look_at = Vec3.zero;
     camera.vup = Vec3.init(0, 1, 0);
     camera.defocus_angle = 0;
+    camera.background_color = Vec3.init(0.7, 0.8, 1);
 
     try camera.render(&world.hittable);
 }
@@ -102,6 +161,7 @@ fn perlinSpheres(al: std.mem.Allocator, camera: *Camera) !void {
     camera.look_at = Vec3.zero;
     camera.vup = Vec3.init(0, 1, 0);
     camera.defocus_angle = 0;
+    camera.background_color = Vec3.init(0.7, 0.8, 1);
 
     var world: hit.List = .{};
     try world.add(al, &(try Sphere.init(al, Vec3.init(0, -1000, 0), 1000, &perlin_surface.material)).hittable);
@@ -125,6 +185,7 @@ fn earth(al: std.mem.Allocator, camera: *Camera) !void {
     camera.look_at = Vec3.zero;
     camera.vup = Vec3.init(0, 1, 0);
     camera.defocus_angle = 0;
+    camera.background_color = Vec3.init(0.7, 0.8, 1);
 
     var world: hit.List = .{};
     try world.add(al, &globe.hittable);
@@ -189,6 +250,7 @@ fn bouncingSpheres(al: std.mem.Allocator, camera: *Camera) !void {
     camera.vup = Vec3.init(0, 1, 0);
     camera.defocus_angle = 0.6;
     camera.focus_distance = 10;
+    camera.background_color = Vec3.init(0.7, 0.8, 1);
 
     const world_bvh = try BVHNode.initFromList(al, world.objects.items);
 
@@ -214,6 +276,7 @@ fn checkeredSpheres(al: std.mem.Allocator, camera: *Camera) !void {
     camera.look_at = Vec3.zero;
     camera.vup = Vec3.init(0, 1, 0);
     camera.defocus_angle = 0;
+    camera.background_color = Vec3.init(0.7, 0.8, 1);
 
     try camera.render(&world.hittable);
 }

@@ -14,6 +14,12 @@ pub const Material = struct {
         attenuation: *Vec3,
         scattered: *Ray,
     ) bool,
+    emit_fn: *const fn (
+        material: *const Material,
+        u: f64,
+        v: f64,
+        point: Vec3,
+    ) Vec3,
 
     pub fn scatter(
         self: *const Material,
@@ -24,12 +30,21 @@ pub const Material = struct {
     ) bool {
         return self.scatter_fn(self, ray_in, record, attenuation, scattered);
     }
+
+    pub fn emit(
+        self: *const Material,
+        u: f64,
+        v: f64,
+        point: Vec3,
+    ) Vec3 {
+        return self.emit_fn(self, u, v, point);
+    }
 };
 
 pub const Lambertian = struct {
     texture: *tex.Texture,
 
-    material: Material = .{ .scatter_fn = scatter },
+    material: Material = .{ .scatter_fn = scatter, .emit_fn = emit },
 
     pub fn init(allocator: std.mem.Allocator, albedo: Vec3) !*Lambertian {
         const lambertian = try allocator.create(Lambertian);
@@ -62,13 +77,22 @@ pub const Lambertian = struct {
         attenuation.* = self.texture.value(record.u, record.v, record.point);
         return true;
     }
+
+    pub fn emit(
+        _: *const Material,
+        _: f64,
+        _: f64,
+        _: Vec3,
+    ) Vec3 {
+        return Vec3.init(0.0, 0.0, 0.0);
+    }
 };
 
 pub const Metal = struct {
     albedo: Vec3,
     fuzz: f64,
 
-    material: Material = .{ .scatter_fn = scatter },
+    material: Material = .{ .scatter_fn = scatter, .emit_fn = emit },
 
     pub fn init(allocator: std.mem.Allocator, albedo: Vec3, fuzz: f64) !*Metal {
         const metal = try allocator.create(Metal);
@@ -90,6 +114,15 @@ pub const Metal = struct {
         attenuation.* = self.albedo;
         return scattered.direction.dot(record.normal) > 0;
     }
+
+    pub fn emit(
+        _: *const Material,
+        _: f64,
+        _: f64,
+        _: Vec3,
+    ) Vec3 {
+        return Vec3.init(0.0, 0.0, 0.0);
+    }
 };
 
 pub const Dielectric = struct {
@@ -97,7 +130,7 @@ pub const Dielectric = struct {
     // the refractive index of the enclosing media
     refraction_index: f64,
 
-    material: Material = .{ .scatter_fn = scatter },
+    material: Material = .{ .scatter_fn = scatter, .emit_fn = emit },
 
     pub fn init(allocator: std.mem.Allocator, refraction_index: f64) !*Dielectric {
         const dielectric = try allocator.create(Dielectric);
@@ -127,10 +160,63 @@ pub const Dielectric = struct {
         return true;
     }
 
+    pub fn emit(
+        _: *const Material,
+        _: f64,
+        _: f64,
+        _: Vec3,
+    ) Vec3 {
+        return Vec3.init(0.0, 0.0, 0.0);
+    }
+
     fn reflectance(cosine: f64, refraction_index: f64) f64 {
         // Use Schlick's approximation for reflectance.
         var r0 = (1 - refraction_index) / (1 + refraction_index);
         r0 = r0 * r0;
         return r0 + (1 - r0) * std.math.pow(f64, 1 - cosine, 5);
+    }
+};
+
+pub const DiffuseLight = struct {
+    texture: *tex.Texture,
+    material: Material = .{ .scatter_fn = scatter, .emit_fn = emit },
+
+    pub fn init(allocator: std.mem.Allocator, albedo: Vec3) !*DiffuseLight {
+        const t = try tex.SolidColor.init(allocator, albedo);
+        const self = try allocator.create(DiffuseLight);
+        self.* = .{
+            .texture = &t.texture,
+            .material = .{
+                .scatter_fn = DiffuseLight.scatter,
+                .emit_fn = DiffuseLight.emit,
+            },
+        };
+        return self;
+    }
+
+    pub fn initFromTexture(allocator: std.mem.Allocator, texture: *tex.Texture) !*DiffuseLight {
+        const self = try allocator.create(DiffuseLight);
+        self.* = .{ .texture = texture };
+        return self;
+    }
+
+    pub fn scatter(
+        _: *const Material,
+        _: Ray,
+        _: hit.Record,
+        _: *Vec3,
+        _: *Ray,
+    ) bool {
+        return false;
+    }
+
+    pub fn emit(
+        material: *const Material,
+        u: f64,
+        v: f64,
+        point: Vec3,
+    ) Vec3 {
+        const self: *const DiffuseLight = @alignCast(@fieldParentPtr("material", material));
+        return self.texture.value(u, v, point);
     }
 };

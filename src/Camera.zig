@@ -54,6 +54,8 @@ focus_distance: f64 = 10,
 defocus_disk_u: Vec3 = Vec3.zero,
 // Defocus disk vertical radius
 defocus_disk_v: Vec3 = Vec3.zero,
+// Scene background color
+background_color: Vec3 = Vec3.zero,
 
 pub fn init(allocator: std.mem.Allocator) !*Camera {
     const cam = try allocator.create(Camera);
@@ -91,7 +93,7 @@ pub fn render(self: *Camera, world: *const hit.Hittable) !void {
             var pixel_color = Vec3.zero;
             for (0..self.samples_per_pixel) |_| {
                 const r = self.getRay(i, j);
-                pixel_color = pixel_color.add(rayColor(r, self.max_depth, world));
+                pixel_color = pixel_color.add(self.rayColor(r, self.max_depth, world));
             }
             pixel_color = pixel_color.mul(self.pixel_samples_scale);
 
@@ -150,23 +152,24 @@ fn initialize(self: *Camera) void {
     self.defocus_disk_v = self.v.mul(defocus_radius);
 }
 
-fn rayColor(ray: Ray, depth: u32, world: *const hit.Hittable) Vec3 {
+fn rayColor(self: *Camera, ray: Ray, depth: u32, world: *const hit.Hittable) Vec3 {
     // If we've exceeded the ray bounce limit, no more light is gathered.
     if (depth <= 0) return Vec3.zero;
     var rec: hit.Record = undefined;
+    // If the ray hits nothing, return the background color.
     var interval = Interval.init(0.001, std.math.inf(f64));
-    if (world.hit(ray, &interval, &rec)) {
-        var scattered: Ray = undefined;
-        var attenuation: Vec3 = undefined;
-        if (rec.material.scatter(ray, rec, &attenuation, &scattered)) {
-            return attenuation.mulV(rayColor(scattered, depth - 1, world));
-        }
-        return Vec3.zero;
+    if (!world.hit(ray, &interval, &rec)) {
+        return self.background_color;
     }
 
-    const unit_dir = ray.direction.unit();
-    const a = 0.5 * (unit_dir.y() + 1.0);
-    return Vec3.initFromScalar(1).mul(1.0 - a).add(Vec3.init(0.5, 0.7, 1.0).mul(a));
+    var scattered: Ray = undefined;
+    var attenuation: Vec3 = undefined;
+    const color_from_emission = rec.material.emit(rec.u, rec.v, rec.point);
+    if (!rec.material.scatter(ray, rec, &attenuation, &scattered)) return color_from_emission;
+
+    const color_from_scatter = attenuation.mulV(self.rayColor(scattered, depth - 1, world));
+
+    return color_from_emission.add(color_from_scatter);
 }
 
 fn getRay(self: *Camera, i: usize, j: usize) Ray {
