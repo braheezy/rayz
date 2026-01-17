@@ -88,6 +88,27 @@ pub fn boundingBox(
     return self.bbox;
 }
 
+pub fn box(allocator: std.mem.Allocator, a: Vec3, b: Vec3, material: *mat.Material) !*hit.List {
+    const sides = try allocator.create(hit.List);
+    sides.* = hit.List{};
+    // Construct the two opposite vertices with the minimum and maximum coordinates.
+    const min = Vec3.init(@min(a.x(), b.x()), @min(a.y(), b.y()), @min(a.z(), b.z()));
+    const max = Vec3.init(@max(a.x(), b.x()), @max(a.y(), b.y()), @max(a.z(), b.z()));
+
+    const dx = Vec3.init(max.x() - min.x(), 0, 0);
+    const dy = Vec3.init(0, max.y() - min.y(), 0);
+    const dz = Vec3.init(0, 0, max.z() - min.z());
+
+    try sides.add(allocator, &(try Quad.init(allocator, Vec3.init(min.x(), min.y(), max.z()), dx, dy, material)).hittable); // front
+    try sides.add(allocator, &(try Quad.init(allocator, Vec3.init(max.x(), min.y(), max.z()), dz.neg(), dy, material)).hittable); // right
+    try sides.add(allocator, &(try Quad.init(allocator, Vec3.init(max.x(), min.y(), min.z()), dx.neg(), dy, material)).hittable); // back
+    try sides.add(allocator, &(try Quad.init(allocator, Vec3.init(min.x(), min.y(), min.z()), dz, dy, material)).hittable); // left
+    try sides.add(allocator, &(try Quad.init(allocator, Vec3.init(min.x(), max.y(), max.z()), dx, dz.neg(), material)).hittable); // top
+    try sides.add(allocator, &(try Quad.init(allocator, Vec3.init(min.x(), min.y(), min.z()), dx, dz, material)).hittable); // bottom
+
+    return sides;
+}
+
 fn isInterior(a: f64, b: f64, record: *hit.Record) bool {
     const unit_interval = Interval.init(0, 1);
 

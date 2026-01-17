@@ -94,6 +94,14 @@ pub fn longestAxis(self: AABB) usize {
     else if (self.y.size() > self.z.size()) 1 else 2;
 }
 
+pub fn translate(self: AABB, offset: Vec3) AABB {
+    return .{
+        .x = self.x.translate(offset.x()),
+        .y = self.y.translate(offset.y()),
+        .z = self.z.translate(offset.z()),
+    };
+}
+
 // Adjust the AABB so that no side is narrower than some delta, padding if necessary.
 fn padToMinimums(self: AABB) AABB {
     const delta = 0.0001;

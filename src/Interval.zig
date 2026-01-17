@@ -46,3 +46,7 @@ pub fn expand(self: Interval, delta: f64) Interval {
     const padding = delta / 2;
     return .{ .min = self.min - padding, .max = self.max + padding };
 }
+
+pub fn translate(self: Interval, displacement: f64) Interval {
+    return .{ .min = self.min + displacement, .max = self.max + displacement };
+}

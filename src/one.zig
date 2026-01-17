@@ -14,6 +14,8 @@ const util = @import("util.zig");
 const mat = @import("material.zig");
 const BVHNode = @import("BVH.zig");
 const tex = @import("texture.zig");
+const Translate = @import("Translate.zig");
+const rotate = @import("rotate.zig");
 
 const IMAGE_WIDTH = 650;
 
@@ -76,6 +78,15 @@ fn cornellBox(al: std.mem.Allocator, camera: *Camera) !void {
     try world.add(al, &(try Quad.init(al, Vec3.init(555, 555, 555), Vec3.init(-555, 0, 0), Vec3.init(0, 0, -555), &white.material)).hittable);
     try world.add(al, &(try Quad.init(al, Vec3.init(0, 0, 555), Vec3.init(555, 0, 0), Vec3.init(0, 555, 0), &white.material)).hittable);
 
+    const box1 = try Quad.box(al, Vec3.init(0, 0, 0), Vec3.init(165, 330, 165), &white.material);
+    const box1_rotated = try rotate.Y.init(al, &box1.hittable, 15);
+    const box1_translated = try Translate.init(al, &box1_rotated.hittable, Vec3.init(265, 0, 295));
+    try world.add(al, &box1_translated.hittable);
+
+    const box2 = try Quad.box(al, Vec3.init(0, 0, 0), Vec3.init(165, 165, 165), &white.material);
+    const box2_rotated = try rotate.Y.init(al, &box2.hittable, -18);
+    const box2_translated = try Translate.init(al, &box2_rotated.hittable, Vec3.init(130, 0, 65));
+    try world.add(al, &box2_translated.hittable);
     camera.aspect_ratio = 1.0;
     camera.image_width = IMAGE_WIDTH;
     camera.samples_per_pixel = 150;
