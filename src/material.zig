@@ -220,3 +220,43 @@ pub const DiffuseLight = struct {
         return self.texture.value(u, v, point);
     }
 };
+
+pub const Isotropic = struct {
+    texture: *tex.Texture,
+    material: Material = .{ .scatter_fn = scatter, .emit_fn = emit },
+
+    pub fn init(allocator: std.mem.Allocator, albedo: Vec3) !*Isotropic {
+        const t = try tex.SolidColor.init(allocator, albedo);
+        const self = try allocator.create(Isotropic);
+        self.* = .{ .texture = &t.texture };
+        return self;
+    }
+
+    pub fn initFromTexture(allocator: std.mem.Allocator, texture: *tex.Texture) !*Isotropic {
+        const self = try allocator.create(Isotropic);
+        self.* = .{ .texture = texture };
+        return self;
+    }
+
+    pub fn scatter(
+        material: *const Material,
+        ray_in: Ray,
+        record: hit.Record,
+        attenuation: *Vec3,
+        scattered: *Ray,
+    ) bool {
+        const self: *const Isotropic = @alignCast(@fieldParentPtr("material", material));
+        scattered.* = Ray.initWithTime(record.point, Vec3.initRandomUnitVector(), ray_in.time);
+        attenuation.* = self.texture.value(record.u, record.v, record.point);
+        return true;
+    }
+
+    pub fn emit(
+        _: *const Material,
+        _: f64,
+        _: f64,
+        _: Vec3,
+    ) Vec3 {
+        return Vec3.init(0.0, 0.0, 0.0);
+    }
+};
