@@ -3,14 +3,12 @@ const std = @import("std");
 var rand: std.Random = undefined;
 var prng: std.Random.DefaultPrng = undefined;
 
-pub fn init() void {
+pub fn init(io: std.Io) void {
     prng = std.Random.DefaultPrng.init(seed: {
         var seed: u64 = undefined;
-        // get random seed from OS
-        std.posix.getrandom(std.mem.asBytes(&seed)) catch unreachable;
+        io.random(std.mem.asBytes(&seed));
         break :seed seed;
     });
-    // get interface
     rand = prng.random();
 }
 

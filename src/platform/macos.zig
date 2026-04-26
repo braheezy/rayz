@@ -43,8 +43,8 @@ pub const Context = struct {
 
         self.* = .{
             .app = app,
-            .windows = .{},
-            .clipboard_content_types = .{},
+            .windows = .empty,
+            .clipboard_content_types = .empty,
         };
 
         global_context = self;
@@ -78,9 +78,10 @@ pub const Context = struct {
         self.clipboard_content_types.clearRetainingCapacity();
 
         const pasteboard: id = c.NSPasteboard().msgSend(id, sel("generalPasteboard"), .{});
-        const types: ?id = obj(pasteboard).msgSend(?id, sel("types"), .{});
+        const types: id = obj(pasteboard).msgSend(id, sel("types"), .{});
 
-        if (types) |t| {
+        if (types != null) {
+            const t = types;
             const count: c_ulong = obj(t).msgSend(c_ulong, sel("count"), .{});
             for (0..count) |i| {
                 const type_obj: id = obj(t).msgSend(id, sel("objectAtIndex:"), .{i});
@@ -107,9 +108,10 @@ pub const Context = struct {
 
         const pasteboard: id = c.NSPasteboard().msgSend(id, sel("generalPasteboard"), .{});
         const string_type: id = c.NSString().msgSend(id, sel("stringWithUTF8String:"), .{"public.utf8-plain-text"});
-        const string: ?id = obj(pasteboard).msgSend(?id, sel("stringForType:"), .{string_type});
+        const string: id = obj(pasteboard).msgSend(id, sel("stringForType:"), .{string_type});
 
-        if (string) |str| {
+        if (string != null) {
+            const str = string;
             const utf8_ptr: ?[*:0]const u8 = obj(str).msgSend(?[*:0]const u8, sel("UTF8String"), .{});
             if (utf8_ptr) |ptr| {
                 const len = std.mem.len(ptr);
@@ -183,12 +185,12 @@ pub const Window = struct {
             .width = width,
             .height = height,
             .events = .{
-                .{},
-                .{},
+                .empty,
+                .empty,
             },
             .events_front = undefined,
             .events_back = undefined,
-            .keys_down = .{},
+            .keys_down = .empty,
         };
         self.events_front = &self.events[0];
         self.events_back = &self.events[1];
@@ -232,7 +234,7 @@ pub const Window = struct {
         _ = obj(our_layer).msgSend(void, sel("setContentsGravity:"), .{gravity});
 
         // Make key and order front
-        _ = obj(self.ns_window).msgSend(void, sel("makeKeyAndOrderFront:"), .{@as(?id, null)});
+        _ = obj(self.ns_window).msgSend(void, sel("makeKeyAndOrderFront:"), .{@as(id, null)});
 
         try _context.windows.append(util.gpa, self);
         errdefer _ = _context.windows.pop();
@@ -291,7 +293,7 @@ pub const Window = struct {
 
     fn setFullscreen(self: *Self, enabled: bool) !void {
         if (self.fullscreen != enabled) {
-            _ = obj(self.ns_window).msgSend(void, sel("toggleFullScreen:"), .{@as(?id, null)});
+            _ = obj(self.ns_window).msgSend(void, sel("toggleFullScreen:"), .{@as(id, null)});
             self.fullscreen = enabled;
             if (enabled) {
                 try self.addEvent(platform.Event.window_fullscreen_enter());

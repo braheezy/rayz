@@ -12,6 +12,7 @@ const mat = @import("material.zig");
 const Camera = @This();
 
 allocator: std.mem.Allocator,
+io: std.Io,
 pixels: []platform.util.BGRA = undefined,
 
 // Ratio of image width over height
@@ -57,10 +58,11 @@ defocus_disk_v: Vec3 = Vec3.zero,
 // Scene background color
 background_color: Vec3 = Vec3.zero,
 
-pub fn init(allocator: std.mem.Allocator) !*Camera {
+pub fn init(allocator: std.mem.Allocator, io: std.Io) !*Camera {
     const cam = try allocator.create(Camera);
     cam.* = .{
         .allocator = allocator,
+        .io = io,
     };
     return cam;
 }
@@ -74,9 +76,9 @@ pub fn render(self: *Camera, world: *const hit.Hittable) !void {
     self.initialize();
 
     var out_buffer: [1 << 8]u8 = undefined;
-    const out_file = try std.fs.cwd().createFile("out.ppm", .{});
-    defer out_file.close();
-    var out_writer = out_file.writer(&out_buffer);
+    const out_file = try std.Io.Dir.cwd().createFile(self.io, "out.ppm", .{});
+    defer out_file.close(self.io);
+    var out_writer = out_file.writer(self.io, &out_buffer);
     var writer = &out_writer.interface;
 
     const width: usize = @intFromFloat(self.image_width);
@@ -86,7 +88,7 @@ pub fn render(self: *Camera, world: *const hit.Hittable) !void {
     // Allocate framebuffer for pixels
     self.pixels = try self.allocator.alloc(platform.util.BGRA, width * height);
 
-    const start = std.time.nanoTimestamp();
+    const start = std.Io.Clock.now(.boot, self.io).toNanoseconds();
     for (0..height) |j| {
         std.debug.print("\rScanlines remaining: {d} ", .{height - j});
         for (0..width) |i| {
@@ -105,7 +107,7 @@ pub fn render(self: *Camera, world: *const hit.Hittable) !void {
             self.pixels[j * width + i] = color.bytesToBGRA(bytes);
         }
     }
-    const elapsed_ns = std.time.nanoTimestamp() - start;
+    const elapsed_ns = std.Io.Clock.now(.boot, self.io).toNanoseconds() - start;
     const elapsed_s = @as(f64, @floatFromInt(elapsed_ns)) / std.time.ns_per_s;
     std.debug.print("\nRender time: {d:.3} s\n", .{elapsed_s});
 

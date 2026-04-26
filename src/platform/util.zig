@@ -582,5 +582,5 @@ pub fn microTimestamp() i64 {
 }
 
 pub fn nanoTimestamp() i64 {
-    return @intCast((std.Io.Clock.now(.boot, io) catch unreachable).toNanoseconds());
+    return @intCast(std.Io.Clock.now(.boot, io).toNanoseconds());
 }

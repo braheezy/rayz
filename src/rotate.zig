@@ -38,12 +38,8 @@ pub fn init(allocator: std.mem.Allocator, object: *const hit.Hittable, angle: f6
                 const newx = cos_theta * x + sin_theta * z;
                 const newz = -sin_theta * x + cos_theta * z;
 
-                const tester = Vec3.init(newx, y, newz);
-
-                for (0..3) |c| {
-                    min.v[c] = @min(min.v[c], tester.v[c]);
-                    max.v[c] = @max(max.v[c], tester.v[c]);
-                }
+                min = Vec3.init(@min(min.x(), newx), @min(min.y(), y), @min(min.z(), newz));
+                max = Vec3.init(@max(max.x(), newx), @max(max.y(), y), @max(max.z(), newz));
             }
         }
     }

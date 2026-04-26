@@ -70,9 +70,19 @@ pub fn isHit(
 
     for (0..3) |axis| {
         const ax = self.axisInterval(axis);
-        const adinv = 1 / ray_direction.v[axis];
-        const t0 = (ax.min - ray_origin.v[axis]) * adinv;
-        const t1 = (ax.max - ray_origin.v[axis]) * adinv;
+        const origin_axis = switch (axis) {
+            1 => ray_origin.y(),
+            2 => ray_origin.z(),
+            else => ray_origin.x(),
+        };
+        const direction_axis = switch (axis) {
+            1 => ray_direction.y(),
+            2 => ray_direction.z(),
+            else => ray_direction.x(),
+        };
+        const adinv = 1 / direction_axis;
+        const t0 = (ax.min - origin_axis) * adinv;
+        const t1 = (ax.max - origin_axis) * adinv;
 
         if (t0 < t1) {
             if (t0 > ray_t.min) ray_t.*.min = t0;

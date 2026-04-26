@@ -13,15 +13,15 @@ width: usize = 0,
 height: usize = 0,
 bytes_per_scanline: usize = 0,
 
-pub fn init(file_path: []const u8, allocator: std.mem.Allocator) !*Image {
+pub fn init(file_path: []const u8, allocator: std.mem.Allocator, io: std.Io, environ_map: *const std.process.Environ.Map) !*Image {
     var image = try allocator.create(Image);
 
-    const image_dir = std.process.getEnvVarOwned(allocator, "RAYZ_IMAGES") catch null;
+    const image_dir = environ_map.get("RAYZ_IMAGES");
     if (image_dir) |dir| {
         const full_path = try std.fmt.allocPrint(allocator, "{s}/{s}", .{ dir, file_path });
-        try image.load(allocator, full_path);
+        try image.load(allocator, io, full_path);
     } else {
-        try image.load(allocator, file_path);
+        try image.load(allocator, io, file_path);
     }
 
     return image;
@@ -37,14 +37,14 @@ pub fn deinit(self: *Image, allocator: std.mem.Allocator) void {
     allocator.destroy(self);
 }
 
-fn load(self: *Image, allocator: std.mem.Allocator, file_path: []const u8) !void {
+fn load(self: *Image, allocator: std.mem.Allocator, io: std.Io, file_path: []const u8) !void {
     // Loads the linear (gamma=1) image data from the given file name. Returns true if the
     // load succeeded. The resulting data buffer contains the three [0.0, 1.0]
     // floating-point values for the first pixel (red, then green, then blue). Pixels are
     // contiguous, going left to right for the width of the image, followed by the next row
     // below, for the full height of the image.
     var read_buffer: [1 << 8]u8 = undefined;
-    var img = try zigimg.Image.fromFilePath(allocator, file_path, &read_buffer);
+    var img = try zigimg.Image.fromFilePath(allocator, io, file_path, &read_buffer);
 
     try img.convert(allocator, .float32);
 

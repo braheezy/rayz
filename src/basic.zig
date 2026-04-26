@@ -8,7 +8,7 @@ const zero_vec3 = Vec3.zero;
 
 const MAX_RAY_DEPTH = 5;
 
-pub fn main() !void {
+pub fn main(init: std.process.Init) !void {
     var debug_allocator: std.heap.DebugAllocator(.{}) = .init;
     // Memory allocation setup
     const allocator, const is_debug = gpa: {
@@ -77,10 +77,10 @@ pub fn main() !void {
     ));
 
     // Create window and display raytraced image
-    try runWindow(allocator, spheres);
+    try runWindow(init.io, allocator, spheres);
 }
 
-fn runWindow(allocator: std.mem.Allocator, spheres: std.ArrayList(Sphere)) !void {
+fn runWindow(io: std.Io, allocator: std.mem.Allocator, spheres: std.ArrayList(Sphere)) !void {
     const width: u32 = 640;
     const height: u32 = 480;
 
@@ -132,7 +132,7 @@ fn runWindow(allocator: std.mem.Allocator, spheres: std.ArrayList(Sphere)) !void
         // Re-blit on each frame (needed for window redraws)
         plat_window.blitFrame() catch {};
 
-        std.Thread.sleep(16 * std.time.ns_per_ms);
+        std.Io.sleep(io, .fromMilliseconds(16), .awake) catch {};
     }
 
     std.debug.print("Window closed.\n", .{});

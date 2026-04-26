@@ -20,7 +20,7 @@ const ConstantMedium = @import("ConstantMedium.zig");
 
 const IMAGE_WIDTH = 650;
 
-pub fn main() !void {
+pub fn main(init: std.process.Init) !void {
     var debug_allocator: std.heap.DebugAllocator(.{}) = .init;
     // Memory allocation setup
     const allocator, const is_debug = gpa: {
@@ -39,21 +39,21 @@ pub fn main() !void {
     defer arena.deinit();
     const al = arena.allocator();
 
-    util.init();
+    util.init(init.io);
 
-    var camera = try Camera.init(allocator);
+    var camera = try Camera.init(allocator, init.io);
     defer camera.deinit();
 
     switch (9) {
         1 => try bouncingSpheres(al, camera),
         2 => try checkeredSpheres(al, camera),
-        3 => try earth(al, camera),
+        3 => try earth(al, init.io, init.environ_map, camera),
         4 => try perlinSpheres(al, camera),
         5 => try quads(al, camera),
         6 => try simpleLight(al, camera),
         7 => try cornellBox(al, camera),
         8 => try cornellSmoke(al, camera),
-        9 => try finalScene(al, camera),
+        9 => try finalScene(al, init.io, init.environ_map, camera),
         else => unreachable,
     }
 
@@ -64,7 +64,7 @@ pub fn main() !void {
     const window = try ctx.createWindow("Rayz - One", @intFromFloat(camera.image_width), @intFromFloat(camera.image_height));
     defer window.destroy();
 
-    try run(window, camera.pixels);
+    try run(init.io, window, camera.pixels);
 }
 
 fn cornellSmoke(al: std.mem.Allocator, camera: *Camera) !void {
@@ -224,8 +224,8 @@ fn perlinSpheres(al: std.mem.Allocator, camera: *Camera) !void {
     try camera.render(&world.hittable);
 }
 
-fn earth(al: std.mem.Allocator, camera: *Camera) !void {
-    var earth_texture = try tex.Image.init(al, "earthmap.jpg");
+fn earth(al: std.mem.Allocator, io: std.Io, environ_map: *const std.process.Environ.Map, camera: *Camera) !void {
+    var earth_texture = try tex.Image.init(al, io, environ_map, "earthmap.jpg");
     defer earth_texture.deinit(al);
     var earth_surface = try mat.Lambertian.initFromTexture(al, &earth_texture.texture);
     const globe = try Sphere.init(al, Vec3.zero, 2, &earth_surface.material);
@@ -335,7 +335,7 @@ fn checkeredSpheres(al: std.mem.Allocator, camera: *Camera) !void {
     try camera.render(&world.hittable);
 }
 
-fn finalScene(al: std.mem.Allocator, camera: *Camera) !void {
+fn finalScene(al: std.mem.Allocator, io: std.Io, environ_map: *const std.process.Environ.Map, camera: *Camera) !void {
     // Grid of boxes
     var boxes1: hit.List = .{};
     var ground = try mat.Lambertian.init(al, Vec3.init(0.48, 0.83, 0.53));
@@ -398,7 +398,7 @@ fn finalScene(al: std.mem.Allocator, camera: *Camera) !void {
     try world.add(al, &atmosphere_medium.hittable);
 
     // Earth sphere
-    var earth_tex = try tex.Image.init(al, "earthmap.jpg");
+    var earth_tex = try tex.Image.init(al, io, environ_map, "earthmap.jpg");
     var earth_mat = try mat.Lambertian.initFromTexture(al, &earth_tex.texture);
     const earth_sphere = try Sphere.init(al, Vec3.init(400, 200, 400), 100, &earth_mat.material);
     try world.add(al, &earth_sphere.hittable);
@@ -440,7 +440,7 @@ fn finalScene(al: std.mem.Allocator, camera: *Camera) !void {
     try camera.render(&world.hittable);
 }
 
-fn run(window: *platform.Window, pixels: []platform.util.BGRA) !void {
+fn run(io: std.Io, window: *platform.Window, pixels: []platform.util.BGRA) !void {
     // Get platform-specific window to access framebuffer
     const plat_window = @as(*platform.platform.Window, @ptrCast(@alignCast(window._window)));
     const framebuffer = try plat_window.getRAMFrameBuffer();
@@ -475,6 +475,6 @@ fn run(window: *platform.Window, pixels: []platform.util.BGRA) !void {
         // Re-blit on each frame (needed for window redraws)
         plat_window.blitFrame() catch {};
 
-        std.Thread.sleep(16 * std.time.ns_per_ms);
+        std.Io.sleep(io, .fromMilliseconds(16), .awake) catch {};
     }
 }

@@ -68,10 +68,10 @@ pub const Image = struct {
     texture: Texture = .{ .value_fn = value },
     img: *Img,
 
-    pub fn init(allocator: std.mem.Allocator, file_path: []const u8) !*Image {
+    pub fn init(allocator: std.mem.Allocator, io: std.Io, environ_map: *const std.process.Environ.Map, file_path: []const u8) !*Image {
         const self = try allocator.create(Image);
         self.* = .{
-            .img = try Img.init(file_path, allocator),
+            .img = try Img.init(file_path, allocator, io, environ_map),
         };
         return self;
     }
