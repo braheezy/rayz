@@ -14,6 +14,11 @@ pub fn build(b: *std.Build) void {
         .target = target,
         .optimize = optimize,
     });
+    const monte_mod = b.createModule(.{
+        .root_source_file = b.path("src/monte.zig"),
+        .target = target,
+        .optimize = .ReleaseSafe,
+    });
     const target_os = target.result.os.tag;
 
     const zigimg_dependency = b.dependency("zigimg", .{
@@ -29,6 +34,8 @@ pub fn build(b: *std.Build) void {
     basic_mod.addImport("platform", platform_mod);
     one_mod.addImport("platform", platform_mod);
     one_mod.addImport("zigimg", zigimg_dependency.module("zigimg"));
+    monte_mod.addImport("platform", platform_mod);
+    monte_mod.addImport("zigimg", zigimg_dependency.module("zigimg"));
 
     if (target_os == .macos) {
         // Add zig-objc dependency for macOS
@@ -71,4 +78,18 @@ pub fn build(b: *std.Build) void {
     one_run_step.dependOn(&one_run_cmd.step);
 
     one_run_cmd.step.dependOn(b.getInstallStep());
+
+    const monte_exe = b.addExecutable(.{
+        .name = "monte",
+        .root_module = monte_mod,
+    });
+
+    b.installArtifact(monte_exe);
+
+    const monte_run_step = b.step("monte", "Run monte example");
+
+    const monte_run_cmd = b.addRunArtifact(monte_exe);
+    monte_run_step.dependOn(&monte_run_cmd.step);
+
+    monte_run_cmd.step.dependOn(b.getInstallStep());
 }

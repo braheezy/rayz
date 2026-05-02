@@ -33,6 +33,10 @@ pixel_delta_v: Vec3 = Vec3.zero,
 samples_per_pixel: u32 = 10,
 // Color scale factor for a sum of pixel samples
 pixel_samples_scale: f64 = 1.0,
+// Square root of number of samples per pixel
+sqrt_samples_per_pixel: u32 = 0,
+// 1 / sqrt_spp
+reciprocal_sqrt_samples_per_pixel: f64 = 0.0,
 // Maximum number of ray bounces into scene
 max_depth: u32 = 10,
 // Vertical view angle (field of view)
@@ -93,14 +97,17 @@ pub fn render(self: *Camera, world: *const hit.Hittable) !void {
         std.debug.print("\rScanlines remaining: {d} ", .{height - j});
         for (0..width) |i| {
             var pixel_color = Vec3.zero;
-            for (0..self.samples_per_pixel) |_| {
-                const r = self.getRay(i, j);
-                pixel_color = pixel_color.add(self.rayColor(r, self.max_depth, world));
+            for (0..self.sqrt_samples_per_pixel) |s_j| {
+                for (0..self.sqrt_samples_per_pixel) |s_i| {
+                    const r = self.getRay(i, j, s_i, s_j);
+                    pixel_color = pixel_color.add(self.rayColor(r, self.max_depth, world));
+                }
             }
-            pixel_color = pixel_color.mul(self.pixel_samples_scale);
 
             // Write to file
-            const bytes = color.toBytes(pixel_color);
+            const averaged_color = pixel_color.mul(self.pixel_samples_scale);
+            const bytes = color.toBytes(averaged_color);
+
             try writer.print("{d} {d} {d}\n", .{ bytes.r, bytes.g, bytes.b });
 
             // Store in framebuffer
@@ -120,7 +127,10 @@ fn initialize(self: *Camera) void {
     const image_height = self.image_width / self.aspect_ratio;
     self.image_height = if (image_height < 1) 1 else image_height;
 
-    self.pixel_samples_scale = 1.0 / @as(f64, @floatFromInt(self.samples_per_pixel));
+    self.sqrt_samples_per_pixel = @intFromFloat(@sqrt(@as(f64, @floatFromInt(self.samples_per_pixel))));
+    self.pixel_samples_scale = 1.0 / @as(f64, @floatFromInt(self.sqrt_samples_per_pixel * self.sqrt_samples_per_pixel));
+    self.reciprocal_sqrt_samples_per_pixel = 1.0 / @as(f64, @floatFromInt(self.sqrt_samples_per_pixel));
+
     self.center = Vec3.zero;
 
     self.center = self.look_from;
@@ -174,13 +184,13 @@ fn rayColor(self: *Camera, ray: Ray, depth: u32, world: *const hit.Hittable) Vec
     return color_from_emission.add(color_from_scatter);
 }
 
-fn getRay(self: *Camera, i: usize, j: usize) Ray {
-    // Construct a camera ray originating from the defocus disk and directed at a randonly
-    // sampled point around the pixel location i, j.
+fn getRay(self: *Camera, i: usize, j: usize, s_i: usize, s_j: usize) Ray {
+    // Construct a camera ray originating from the defocus disk and directed at a randomly
+    // sampled point around the pixel location i, j for stratified sample square s_i, s_j.
     const i_f: f32 = @floatFromInt(i);
     const j_f: f32 = @floatFromInt(j);
 
-    const offset = sampleSquare();
+    const offset = self.sampleSquareStratified(s_i, s_j);
     const pixel_sample = self.pixel00_loc.add(self.pixel_delta_u.mul(i_f + offset.x())).add(self.pixel_delta_v.mul(j_f + offset.y()));
     const ray_origin = if (self.defocus_angle <= 0) self.center else self.defocusDiskSample();
     const ray_direction = pixel_sample.sub(ray_origin);
@@ -197,4 +207,15 @@ fn defocusDiskSample(self: *Camera) Vec3 {
 // Returns the vector to a random point in the [-.5,-.5]-[+.5,+.5] unit square.
 fn sampleSquare() Vec3 {
     return Vec3.init(util.random() - 0.5, util.random() - 0.5, 0);
+}
+
+// Returns the vector to a random point in the square sub-pixel specified by grid
+// indices s_i and s_j, for an idealized unit square pixel [-.5,-.5] to [+.5,+.5].
+fn sampleSquareStratified(self: *Camera, s_i: usize, s_j: usize) Vec3 {
+    const fi: f64 = @floatFromInt(s_i);
+    const fj: f64 = @floatFromInt(s_j);
+    const px = ((fi + util.random()) * self.reciprocal_sqrt_samples_per_pixel) - 0.5;
+    const py = ((fj + util.random()) * self.reciprocal_sqrt_samples_per_pixel) - 0.5;
+
+    return Vec3.init(px, py, 0);
 }
