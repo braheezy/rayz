@@ -176,10 +176,22 @@ fn rayColor(self: *Camera, ray: Ray, depth: u32, world: *const hit.Hittable) Vec
 
     var scattered: Ray = undefined;
     var attenuation: Vec3 = undefined;
-    const color_from_emission = rec.material.emit(rec.u, rec.v, rec.point);
-    if (!rec.material.scatter(ray, rec, &attenuation, &scattered)) return color_from_emission;
+    var pdf_value: f64 = 0;
+    const color_from_emission = rec.material.emit(rec, rec.u, rec.v, rec.point);
+    if (!rec.material.scatter(ray, rec, &attenuation, &scattered, &pdf_value)) return color_from_emission;
 
-    const color_from_scatter = attenuation.mulV(self.rayColor(scattered, depth - 1, world));
+    const on_light = Vec3.init(util.randomInRange(213, 343), 554, util.randomInRange(227, 332));
+    var to_light = on_light.sub(rec.point);
+    const distance_squared = to_light.lengthSquared();
+    to_light = to_light.unit();
+    if (to_light.dot(rec.normal) < 0) return color_from_emission;
+    const light_area = (343.0 - 213.0) * (332.0 - 227.0);
+    const light_cosine = @abs(to_light.y());
+    if (light_cosine < 0.000001) return color_from_emission;
+    pdf_value = distance_squared / (light_cosine * light_area);
+    scattered = Ray.initWithTime(rec.point, to_light, ray.time);
+    const scattering_pdf = rec.material.scatteringPdf(ray, rec, &scattered);
+    const color_from_scatter = (attenuation.mul(scattering_pdf).mulV(self.rayColor(scattered, depth - 1, world))).div(pdf_value);
 
     return color_from_emission.add(color_from_scatter);
 }

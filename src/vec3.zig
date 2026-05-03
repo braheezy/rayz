@@ -130,3 +130,15 @@ pub fn cross(u: Vec3, v: Vec3) Vec3 {
         u.v[0] * v.v[1] - u.v[1] * v.v[0],
     );
 }
+
+pub fn randomCosineDirection() Vec3 {
+    const r1 = util.random();
+    const r2 = util.random();
+
+    const phi = 2.0 * std.math.pi * r1;
+    const _x = @cos(phi) * @sqrt(r2);
+    const _y = @sin(phi) * @sqrt(r2);
+    const _z = @sqrt(1 - r2);
+
+    return .{ .v = .{ _x, _y, _z } };
+}

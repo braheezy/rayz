@@ -5,6 +5,7 @@ const hit = @import("hit.zig");
 const Vec3 = @import("Vec3.zig");
 const util = @import("util.zig");
 const tex = @import("texture.zig");
+const ONB = @import("ONB.zig");
 
 pub const Material = struct {
     scatter_fn: *const fn (
@@ -13,13 +14,21 @@ pub const Material = struct {
         record: hit.Record,
         attenuation: *Vec3,
         scattered: *Ray,
+        pdf: *f64,
     ) bool,
     emit_fn: *const fn (
         material: *const Material,
+        record: hit.Record,
         u: f64,
         v: f64,
         point: Vec3,
     ) Vec3,
+    scattering_pdf_fn: *const fn (
+        material: *const Material,
+        ray_in: Ray,
+        record: hit.Record,
+        scattered: *Ray,
+    ) f64,
 
     pub fn scatter(
         self: *const Material,
@@ -27,24 +36,35 @@ pub const Material = struct {
         record: hit.Record,
         attenuation: *Vec3,
         scattered: *Ray,
+        pdf: *f64,
     ) bool {
-        return self.scatter_fn(self, ray_in, record, attenuation, scattered);
+        return self.scatter_fn(self, ray_in, record, attenuation, scattered, pdf);
     }
 
     pub fn emit(
         self: *const Material,
+        record: hit.Record,
         u: f64,
         v: f64,
         point: Vec3,
     ) Vec3 {
-        return self.emit_fn(self, u, v, point);
+        return self.emit_fn(self, record, u, v, point);
+    }
+
+    pub fn scatteringPdf(
+        self: *const Material,
+        ray_in: Ray,
+        record: hit.Record,
+        scattered: *Ray,
+    ) f64 {
+        return self.scattering_pdf_fn(self, ray_in, record, scattered);
     }
 };
 
 pub const Lambertian = struct {
     texture: *tex.Texture,
 
-    material: Material = .{ .scatter_fn = scatter, .emit_fn = emit },
+    material: Material = .{ .scatter_fn = scatter, .emit_fn = emit, .scattering_pdf_fn = scatteringPdf },
 
     pub fn init(allocator: std.mem.Allocator, albedo: Vec3) !*Lambertian {
         const lambertian = try allocator.create(Lambertian);
@@ -65,26 +85,35 @@ pub const Lambertian = struct {
         record: hit.Record,
         attenuation: *Vec3,
         scattered: *Ray,
+        pdf: *f64,
     ) bool {
         const self: *const Lambertian = @alignCast(@fieldParentPtr("material", material));
-        var scatter_direction = record.normal.add(Vec3.initRandomUnitVector());
+        const uvw = ONB.init(record.normal);
+        var scatter_direction = uvw.transform(Vec3.randomCosineDirection());
 
-        // Catch degenerate scatter direction
-        if (scatter_direction.nearZero()) {
-            scatter_direction = record.normal;
-        }
-        scattered.* = Ray.initWithTime(record.point, scatter_direction, ray_in.time);
+        scattered.* = Ray.initWithTime(record.point, scatter_direction.unit(), ray_in.time);
         attenuation.* = self.texture.value(record.u, record.v, record.point);
+        pdf.* = uvw.w().dot(scattered.direction) / std.math.pi;
         return true;
     }
 
     pub fn emit(
         _: *const Material,
+        _: hit.Record,
         _: f64,
         _: f64,
         _: Vec3,
     ) Vec3 {
         return Vec3.init(0.0, 0.0, 0.0);
+    }
+
+    pub fn scatteringPdf(
+        _: *const Material,
+        _: Ray,
+        _: hit.Record,
+        _: *Ray,
+    ) f64 {
+        return 1.0 / (2.0 * std.math.pi);
     }
 };
 
@@ -92,7 +121,11 @@ pub const Metal = struct {
     albedo: Vec3,
     fuzz: f64,
 
-    material: Material = .{ .scatter_fn = scatter, .emit_fn = emit },
+    material: Material = .{
+        .scatter_fn = scatter,
+        .emit_fn = emit,
+        .scattering_pdf_fn = scatteringPdf,
+    },
 
     pub fn init(allocator: std.mem.Allocator, albedo: Vec3, fuzz: f64) !*Metal {
         const metal = try allocator.create(Metal);
@@ -106,6 +139,7 @@ pub const Metal = struct {
         record: hit.Record,
         attenuation: *Vec3,
         scattered: *Ray,
+        _: *f64,
     ) bool {
         const self: *const Metal = @alignCast(@fieldParentPtr("material", material));
         var reflected = ray_in.direction.reflect(record.normal);
@@ -117,11 +151,21 @@ pub const Metal = struct {
 
     pub fn emit(
         _: *const Material,
+        _: hit.Record,
         _: f64,
         _: f64,
         _: Vec3,
     ) Vec3 {
         return Vec3.init(0.0, 0.0, 0.0);
+    }
+
+    pub fn scatteringPdf(
+        _: *const Material,
+        _: Ray,
+        _: hit.Record,
+        _: *Ray,
+    ) f64 {
+        return 0.0;
     }
 };
 
@@ -130,7 +174,11 @@ pub const Dielectric = struct {
     // the refractive index of the enclosing media
     refraction_index: f64,
 
-    material: Material = .{ .scatter_fn = scatter, .emit_fn = emit },
+    material: Material = .{
+        .scatter_fn = scatter,
+        .emit_fn = emit,
+        .scattering_pdf_fn = scatteringPdf,
+    },
 
     pub fn init(allocator: std.mem.Allocator, refraction_index: f64) !*Dielectric {
         const dielectric = try allocator.create(Dielectric);
@@ -144,6 +192,7 @@ pub const Dielectric = struct {
         record: hit.Record,
         attenuation: *Vec3,
         scattered: *Ray,
+        _: *f64,
     ) bool {
         const self: *const Dielectric = @alignCast(@fieldParentPtr("material", material));
         attenuation.* = Vec3.init(1.0, 1.0, 1.0);
@@ -162,11 +211,21 @@ pub const Dielectric = struct {
 
     pub fn emit(
         _: *const Material,
+        _: hit.Record,
         _: f64,
         _: f64,
         _: Vec3,
     ) Vec3 {
         return Vec3.init(0.0, 0.0, 0.0);
+    }
+
+    pub fn scatteringPdf(
+        _: *const Material,
+        _: Ray,
+        _: hit.Record,
+        _: *Ray,
+    ) f64 {
+        return 0.0;
     }
 
     fn reflectance(cosine: f64, refraction_index: f64) f64 {
@@ -179,7 +238,7 @@ pub const Dielectric = struct {
 
 pub const DiffuseLight = struct {
     texture: *tex.Texture,
-    material: Material = .{ .scatter_fn = scatter, .emit_fn = emit },
+    material: Material = .{ .scatter_fn = scatter, .emit_fn = emit, .scattering_pdf_fn = scatteringPdf },
 
     pub fn init(allocator: std.mem.Allocator, albedo: Vec3) !*DiffuseLight {
         const t = try tex.SolidColor.init(allocator, albedo);
@@ -189,6 +248,7 @@ pub const DiffuseLight = struct {
             .material = .{
                 .scatter_fn = DiffuseLight.scatter,
                 .emit_fn = DiffuseLight.emit,
+                .scattering_pdf_fn = DiffuseLight.scatteringPdf,
             },
         };
         return self;
@@ -206,24 +266,40 @@ pub const DiffuseLight = struct {
         _: hit.Record,
         _: *Vec3,
         _: *Ray,
+        _: *f64,
     ) bool {
         return false;
     }
 
+    pub fn scatteringPdf(
+        _: *const Material,
+        _: Ray,
+        _: hit.Record,
+        _: *Ray,
+    ) f64 {
+        return 0.0;
+    }
+
     pub fn emit(
         material: *const Material,
+        record: hit.Record,
         u: f64,
         v: f64,
         point: Vec3,
     ) Vec3 {
         const self: *const DiffuseLight = @alignCast(@fieldParentPtr("material", material));
+        if (!record.front_face) return Vec3.zero;
         return self.texture.value(u, v, point);
     }
 };
 
 pub const Isotropic = struct {
     texture: *tex.Texture,
-    material: Material = .{ .scatter_fn = scatter, .emit_fn = emit },
+    material: Material = .{
+        .scatter_fn = scatter,
+        .emit_fn = emit,
+        .scattering_pdf_fn = scatteringPdf,
+    },
 
     pub fn init(allocator: std.mem.Allocator, albedo: Vec3) !*Isotropic {
         const t = try tex.SolidColor.init(allocator, albedo);
@@ -244,15 +320,27 @@ pub const Isotropic = struct {
         record: hit.Record,
         attenuation: *Vec3,
         scattered: *Ray,
+        pdf: *f64,
     ) bool {
         const self: *const Isotropic = @alignCast(@fieldParentPtr("material", material));
         scattered.* = Ray.initWithTime(record.point, Vec3.initRandomUnitVector(), ray_in.time);
         attenuation.* = self.texture.value(record.u, record.v, record.point);
+        pdf.* = 1.0 / (4.0 * std.math.pi);
         return true;
+    }
+
+    pub fn scatteringPdf(
+        _: *const Material,
+        _: Ray,
+        _: hit.Record,
+        _: *Ray,
+    ) f64 {
+        return 1.0 / (4.0 * std.math.pi);
     }
 
     pub fn emit(
         _: *const Material,
+        _: hit.Record,
         _: f64,
         _: f64,
         _: Vec3,

@@ -47,7 +47,7 @@ pub fn main(init: std.process.Init) !void {
 
     camera.aspect_ratio = 1.0;
     camera.image_width = 600;
-    camera.samples_per_pixel = 64;
+    camera.samples_per_pixel = 10;
     camera.max_depth = 50;
     camera.vfov = 40;
     camera.look_from = Vec3.init(278, 278, -800);
