@@ -5,6 +5,7 @@ const hit = @import("hit.zig");
 const Interval = @import("Interval.zig");
 const mat = @import("material.zig");
 const AABB = @import("AABB.zig");
+const util = @import("util.zig");
 
 const Material = mat.Material;
 
@@ -16,8 +17,14 @@ v: Vec3,
 w: Vec3,
 d: f64,
 normal: Vec3,
-hittable: hit.Hittable = .{ .hit_fn = isHit, .bbox_fn = boundingBox },
+hittable: hit.Hittable = .{
+    .hit_fn = isHit,
+    .bbox_fn = boundingBox,
+    .pdf_value_fn = pdfValue,
+    .random_fn = random,
+},
 bbox: AABB = undefined,
+area: f64,
 material: *Material,
 
 pub fn init(
@@ -38,6 +45,7 @@ pub fn init(
         .normal = normal,
         .d = normal.dot(q),
         .w = n.div(n.dot(n)),
+        .area = n.length(),
     };
     quad.setBoundingBox();
     return quad;
@@ -86,6 +94,31 @@ pub fn boundingBox(
 ) AABB {
     const self: *const Quad = @alignCast(@fieldParentPtr("hittable", hittable));
     return self.bbox;
+}
+
+pub fn pdfValue(
+    hittable: *const hit.Hittable,
+    origin: Vec3,
+    direction: Vec3,
+) f64 {
+    const self: *const Quad = @alignCast(@fieldParentPtr("hittable", hittable));
+    var record: hit.Record = undefined;
+    var interval = Interval.init(0.001, std.math.inf(f64));
+    if (!self.hittable.hit(Ray.init(origin, direction), &interval, &record)) return 0.0;
+
+    const distance_squared = record.t * record.t * direction.lengthSquared();
+    const cosine = @abs(direction.dot(record.normal) / direction.length());
+
+    return distance_squared / (cosine * self.area);
+}
+
+pub fn random(
+    hittable: *const hit.Hittable,
+    origin: Vec3,
+) Vec3 {
+    const self: *const Quad = @alignCast(@fieldParentPtr("hittable", hittable));
+    const p = self.q.add(self.u.mul(util.random())).add(self.v.mul(util.random()));
+    return p.sub(origin);
 }
 
 pub fn box(allocator: std.mem.Allocator, a: Vec3, b: Vec3, material: *mat.Material) !*hit.List {

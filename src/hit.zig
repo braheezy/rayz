@@ -4,6 +4,7 @@ const Ray = @import("Ray.zig");
 const Interval = @import("Interval.zig");
 const mat = @import("material.zig");
 const AABB = @import("AABB.zig");
+const util = @import("util.zig");
 
 const Material = mat.Material;
 
@@ -34,6 +35,15 @@ pub const Hittable = struct {
     ) bool,
 
     bbox_fn: *const fn (hittable: *const Hittable) AABB = undefined,
+    pdf_value_fn: *const fn (
+        hittable: *const Hittable,
+        origin: Vec3,
+        direction: Vec3,
+    ) f64 = defaultPdfValue,
+    random_fn: *const fn (
+        hittable: *const Hittable,
+        origin: Vec3,
+    ) Vec3 = defaultRandom,
 
     pub fn hit(
         self: *const Hittable,
@@ -47,12 +57,25 @@ pub const Hittable = struct {
     pub fn boundingBox(self: *const Hittable) AABB {
         return self.bbox_fn(self);
     }
+
+    pub fn pdfValue(self: *const Hittable, origin: Vec3, direction: Vec3) f64 {
+        return self.pdf_value_fn(self, origin, direction);
+    }
+
+    pub fn random(self: *const Hittable, origin: Vec3) Vec3 {
+        return self.random_fn(self, origin);
+    }
 };
 
 pub const List = struct {
     objects: std.ArrayList(*const Hittable) = .empty,
 
-    hittable: Hittable = .{ .hit_fn = isHit, .bbox_fn = boundingBox },
+    hittable: Hittable = .{
+        .hit_fn = isHit,
+        .bbox_fn = boundingBox,
+        .pdf_value_fn = pdfValue,
+        .random_fn = random,
+    },
     bbox: AABB = undefined,
 
     pub fn add(self: *List, allocator: std.mem.Allocator, hittable: *const Hittable) !void {
@@ -86,7 +109,40 @@ pub const List = struct {
 
         return hit_anything;
     }
+
+    pub fn pdfValue(
+        hittable: *const Hittable,
+        origin: Vec3,
+        direction: Vec3,
+    ) f64 {
+        const self: *const List = @alignCast(@fieldParentPtr("hittable", hittable));
+        const weight = 1.0 / @as(f64, @floatFromInt(self.objects.items.len));
+        var sum: f64 = 0.0;
+
+        for (self.objects.items) |obj| {
+            sum += weight * obj.pdfValue(origin, direction);
+        }
+
+        return sum;
+    }
+
+    pub fn random(
+        hittable: *const Hittable,
+        origin: Vec3,
+    ) Vec3 {
+        const self: *const List = @alignCast(@fieldParentPtr("hittable", hittable));
+        const index: usize = @intCast(util.randomInt(0, @intCast(self.objects.items.len - 1)));
+        return self.objects.items[index].random(origin);
+    }
 };
+
+fn defaultPdfValue(_: *const Hittable, _: Vec3, _: Vec3) f64 {
+    return 0.0;
+}
+
+fn defaultRandom(_: *const Hittable, _: Vec3) Vec3 {
+    return Vec3.init(1, 0, 0);
+}
 
 pub fn boundingBox(
     hittable: *const Hittable,

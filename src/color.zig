@@ -18,10 +18,19 @@ pub fn write(io: *std.Io.Writer, color: Color) !void {
 
 pub fn toBytes(color: Vec3) ColorBytes {
     const intensity = Interval.init(0.0, 0.999);
+    var r = color.x();
+    var g = color.y();
+    var b = color.z();
+
+    // Replace NaN components with zero.
+    if (r != r) r = 0.0;
+    if (g != g) g = 0.0;
+    if (b != b) b = 0.0;
+
     // Apply a linear to gamma transform for gamma 2
-    const r = linearToGamma(color.x());
-    const g = linearToGamma(color.y());
-    const b = linearToGamma(color.z());
+    r = linearToGamma(r);
+    g = linearToGamma(g);
+    b = linearToGamma(b);
     return .{
         .r = @intFromFloat(256.0 * intensity.clamp(r)),
         .g = @intFromFloat(256.0 * intensity.clamp(g)),

@@ -6,6 +6,16 @@ const Vec3 = @import("Vec3.zig");
 const util = @import("util.zig");
 const tex = @import("texture.zig");
 const ONB = @import("ONB.zig");
+const pdf_mod = @import("pdf.zig");
+
+pub const ScatterRecord = struct {
+    attenuation: Vec3,
+    pdf_ptr: ?*const pdf_mod.PDF,
+    pdf_storage: pdf_mod.Cosine = undefined,
+    sphere_pdf_storage: pdf_mod.Sphere = undefined,
+    skip_pdf: bool,
+    skip_pdf_ray: Ray,
+};
 
 pub const Material = struct {
     scatter_fn: *const fn (
@@ -16,6 +26,12 @@ pub const Material = struct {
         scattered: *Ray,
         pdf: *f64,
     ) bool,
+    scatter_record_fn: *const fn (
+        material: *const Material,
+        ray_in: Ray,
+        record: hit.Record,
+        srec: *ScatterRecord,
+    ) bool = defaultScatterRecord,
     emit_fn: *const fn (
         material: *const Material,
         record: hit.Record,
@@ -41,6 +57,15 @@ pub const Material = struct {
         return self.scatter_fn(self, ray_in, record, attenuation, scattered, pdf);
     }
 
+    pub fn scatterRecord(
+        self: *const Material,
+        ray_in: Ray,
+        record: hit.Record,
+        srec: *ScatterRecord,
+    ) bool {
+        return self.scatter_record_fn(self, ray_in, record, srec);
+    }
+
     pub fn emit(
         self: *const Material,
         record: hit.Record,
@@ -61,10 +86,19 @@ pub const Material = struct {
     }
 };
 
+fn defaultScatterRecord(
+    _: *const Material,
+    _: Ray,
+    _: hit.Record,
+    _: *ScatterRecord,
+) bool {
+    return false;
+}
+
 pub const Lambertian = struct {
     texture: *tex.Texture,
 
-    material: Material = .{ .scatter_fn = scatter, .emit_fn = emit, .scattering_pdf_fn = scatteringPdf },
+    material: Material = .{ .scatter_fn = scatter, .scatter_record_fn = scatterRecord, .emit_fn = emit, .scattering_pdf_fn = scatteringPdf },
 
     pub fn init(allocator: std.mem.Allocator, albedo: Vec3) !*Lambertian {
         const lambertian = try allocator.create(Lambertian);
@@ -97,6 +131,20 @@ pub const Lambertian = struct {
         return true;
     }
 
+    pub fn scatterRecord(
+        material: *const Material,
+        _: Ray,
+        record: hit.Record,
+        srec: *ScatterRecord,
+    ) bool {
+        const self: *const Lambertian = @alignCast(@fieldParentPtr("material", material));
+        srec.attenuation = self.texture.value(record.u, record.v, record.point);
+        srec.pdf_storage = pdf_mod.Cosine.init(record.normal);
+        srec.pdf_ptr = &srec.pdf_storage.pdf;
+        srec.skip_pdf = false;
+        return true;
+    }
+
     pub fn emit(
         _: *const Material,
         _: hit.Record,
@@ -110,10 +158,11 @@ pub const Lambertian = struct {
     pub fn scatteringPdf(
         _: *const Material,
         _: Ray,
-        _: hit.Record,
-        _: *Ray,
+        record: hit.Record,
+        scattered: *Ray,
     ) f64 {
-        return 1.0 / (2.0 * std.math.pi);
+        const cos_theta = record.normal.dot(scattered.direction.unit());
+        return if (cos_theta < 0) 0 else cos_theta / std.math.pi;
     }
 };
 
@@ -123,6 +172,7 @@ pub const Metal = struct {
 
     material: Material = .{
         .scatter_fn = scatter,
+        .scatter_record_fn = scatterRecord,
         .emit_fn = emit,
         .scattering_pdf_fn = scatteringPdf,
     },
@@ -147,6 +197,23 @@ pub const Metal = struct {
         scattered.* = Ray.initWithTime(record.point, reflected, ray_in.time);
         attenuation.* = self.albedo;
         return scattered.direction.dot(record.normal) > 0;
+    }
+
+    pub fn scatterRecord(
+        material: *const Material,
+        ray_in: Ray,
+        record: hit.Record,
+        srec: *ScatterRecord,
+    ) bool {
+        const self: *const Metal = @alignCast(@fieldParentPtr("material", material));
+        var reflected = ray_in.direction.reflect(record.normal);
+        reflected = reflected.unit().add(Vec3.initRandomUnitVector().mul(self.fuzz));
+
+        srec.attenuation = self.albedo;
+        srec.pdf_ptr = null;
+        srec.skip_pdf = true;
+        srec.skip_pdf_ray = Ray.initWithTime(record.point, reflected, ray_in.time);
+        return true;
     }
 
     pub fn emit(
@@ -176,6 +243,7 @@ pub const Dielectric = struct {
 
     material: Material = .{
         .scatter_fn = scatter,
+        .scatter_record_fn = scatterRecord,
         .emit_fn = emit,
         .scattering_pdf_fn = scatteringPdf,
     },
@@ -206,6 +274,32 @@ pub const Dielectric = struct {
         else
             unit_direction.refract(record.normal, ri);
         scattered.* = Ray.initWithTime(record.point, direction, ray_in.time);
+        return true;
+    }
+
+    pub fn scatterRecord(
+        material: *const Material,
+        ray_in: Ray,
+        record: hit.Record,
+        srec: *ScatterRecord,
+    ) bool {
+        const self: *const Dielectric = @alignCast(@fieldParentPtr("material", material));
+        srec.attenuation = Vec3.init(1.0, 1.0, 1.0);
+        srec.pdf_ptr = null;
+        srec.skip_pdf = true;
+
+        const ri = if (record.front_face) 1.0 / self.refraction_index else self.refraction_index;
+        const unit_direction = ray_in.direction.unit();
+        const cos_theta = @min(unit_direction.neg().dot(record.normal), 1.0);
+        const sin_theta = @sqrt(1.0 - cos_theta * cos_theta);
+        const cannot_refract = ri * sin_theta > 1.0;
+
+        const direction = if (cannot_refract or reflectance(cos_theta, ri) > util.random())
+            unit_direction.reflect(record.normal)
+        else
+            unit_direction.refract(record.normal, ri);
+
+        srec.skip_pdf_ray = Ray.initWithTime(record.point, direction, ray_in.time);
         return true;
     }
 
@@ -297,6 +391,7 @@ pub const Isotropic = struct {
     texture: *tex.Texture,
     material: Material = .{
         .scatter_fn = scatter,
+        .scatter_record_fn = scatterRecord,
         .emit_fn = emit,
         .scattering_pdf_fn = scatteringPdf,
     },
@@ -326,6 +421,20 @@ pub const Isotropic = struct {
         scattered.* = Ray.initWithTime(record.point, Vec3.initRandomUnitVector(), ray_in.time);
         attenuation.* = self.texture.value(record.u, record.v, record.point);
         pdf.* = 1.0 / (4.0 * std.math.pi);
+        return true;
+    }
+
+    pub fn scatterRecord(
+        material: *const Material,
+        _: Ray,
+        record: hit.Record,
+        srec: *ScatterRecord,
+    ) bool {
+        const self: *const Isotropic = @alignCast(@fieldParentPtr("material", material));
+        srec.attenuation = self.texture.value(record.u, record.v, record.point);
+        srec.sphere_pdf_storage = .{};
+        srec.pdf_ptr = &srec.sphere_pdf_storage.pdf;
+        srec.skip_pdf = false;
         return true;
     }
 

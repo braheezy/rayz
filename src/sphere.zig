@@ -5,12 +5,19 @@ const hit = @import("hit.zig");
 const Interval = @import("Interval.zig");
 const mat = @import("material.zig");
 const AABB = @import("AABB.zig");
+const ONB = @import("ONB.zig");
+const util = @import("util.zig");
 
 const Material = mat.Material;
 
 const Sphere = @This();
 
-hittable: hit.Hittable = .{ .hit_fn = isHit, .bbox_fn = boundingBox },
+hittable: hit.Hittable = .{
+    .hit_fn = isHit,
+    .bbox_fn = boundingBox,
+    .pdf_value_fn = pdfValue,
+    .random_fn = random,
+},
 bbox: AABB = undefined,
 center: Ray = undefined,
 radius: f64 = 0,
@@ -96,6 +103,46 @@ pub fn boundingBox(
 ) AABB {
     const self: *const Sphere = @alignCast(@fieldParentPtr("hittable", hittable));
     return self.bbox;
+}
+
+pub fn pdfValue(
+    hittable: *const hit.Hittable,
+    origin: Vec3,
+    direction: Vec3,
+) f64 {
+    const self: *const Sphere = @alignCast(@fieldParentPtr("hittable", hittable));
+    var record: hit.Record = undefined;
+    var interval = Interval.init(0.001, std.math.inf(f64));
+    if (!self.hittable.hit(Ray.init(origin, direction), &interval, &record)) return 0.0;
+
+    const distance_squared = self.center.at(0).sub(origin).lengthSquared();
+    const cos_theta_max = @sqrt(1.0 - self.radius * self.radius / distance_squared);
+    const solid_angle = 2.0 * std.math.pi * (1.0 - cos_theta_max);
+
+    return 1.0 / solid_angle;
+}
+
+pub fn random(
+    hittable: *const hit.Hittable,
+    origin: Vec3,
+) Vec3 {
+    const self: *const Sphere = @alignCast(@fieldParentPtr("hittable", hittable));
+    const direction = self.center.at(0).sub(origin);
+    const distance_squared = direction.lengthSquared();
+    const uvw = ONB.init(direction);
+    return uvw.transform(randomToSphere(self.radius, distance_squared));
+}
+
+pub fn randomToSphere(radius: f64, distance_squared: f64) Vec3 {
+    const r1 = util.random();
+    const r2 = util.random();
+    const z = 1.0 + r2 * (@sqrt(1.0 - radius * radius / distance_squared) - 1.0);
+
+    const phi = 2.0 * std.math.pi * r1;
+    const x = @cos(phi) * @sqrt(1.0 - z * z);
+    const y = @sin(phi) * @sqrt(1.0 - z * z);
+
+    return Vec3.init(x, y, z);
 }
 
 pub fn getUv(p: Vec3) struct { f64, f64 } {

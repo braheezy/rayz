@@ -8,6 +8,7 @@ const Translate = @import("Translate.zig");
 const Camera = @import("Camera.zig");
 const util = @import("util.zig");
 const platform = @import("platform");
+const Sphere = @import("sphere.zig");
 
 var rand: std.Random = undefined;
 var prng: std.Random.DefaultPrng = undefined;
@@ -35,19 +36,26 @@ pub fn main(init: std.process.Init) !void {
     // Light
     try world.add(al, &(try Quad.init(al, Vec3.init(213, 554, 227), Vec3.init(130, 0, 0), Vec3.init(0, 0, 105), &light.material)).hittable);
 
+    // const aluminum = try mat.Metal.init(al, Vec3.init(0.8, 0.85, 0.88), 0.0);
     const box1 = try Quad.box(al, Vec3.init(0, 0, 0), Vec3.init(165, 330, 165), &white.material);
     const box1_rotated = try rotate.Y.init(al, &box1.hittable, 15);
     const box1_translated = try Translate.init(al, &box1_rotated.hittable, Vec3.init(265, 0, 295));
     try world.add(al, &box1_translated.hittable);
 
-    const box2 = try Quad.box(al, Vec3.init(0, 0, 0), Vec3.init(165, 165, 165), &white.material);
-    const box2_rotated = try rotate.Y.init(al, &box2.hittable, -18);
-    const box2_translated = try Translate.init(al, &box2_rotated.hittable, Vec3.init(130, 0, 65));
-    try world.add(al, &box2_translated.hittable);
+    // const box2 = try Quad.box(al, Vec3.init(0, 0, 0), Vec3.init(165, 165, 165), &white.material);
+    // const box2_rotated = try rotate.Y.init(al, &box2.hittable, -18);
+    // const box2_translated = try Translate.init(al, &box2_rotated.hittable, Vec3.init(130, 0, 65));
+    // try world.add(al, &box2_translated.hittable);
+    const glass = try mat.Dielectric.init(al, 1.5);
+    try world.add(al, &(try Sphere.init(al, Vec3.init(190, 90, 190), 90, &glass.material)).hittable);
+
+    var lights: hit.List = .{};
+    try lights.add(al, &(try Quad.init(al, Vec3.init(343, 554, 332), Vec3.init(-130, 0, 0), Vec3.init(0, 0, -105), &light.material)).hittable);
+    try lights.add(al, &(try Sphere.init(al, Vec3.init(190, 90, 190), 90, &light.material)).hittable);
 
     camera.aspect_ratio = 1.0;
     camera.image_width = 600;
-    camera.samples_per_pixel = 10;
+    camera.samples_per_pixel = 1000;
     camera.max_depth = 50;
     camera.vfov = 40;
     camera.look_from = Vec3.init(278, 278, -800);
@@ -56,7 +64,7 @@ pub fn main(init: std.process.Init) !void {
     camera.defocus_angle = 0;
     camera.background_color = Vec3.zero;
 
-    try camera.render(&world.hittable);
+    try camera.render(&world.hittable, &lights.hittable);
 
     // Create platform context
     const ctx = try platform.Context.create(al);

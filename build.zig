@@ -65,19 +65,19 @@ pub fn build(b: *std.Build) void {
 
     basic_run_cmd.step.dependOn(b.getInstallStep());
 
-    const one_exe = b.addExecutable(.{
-        .name = "one",
-        .root_module = one_mod,
-    });
+    // const one_exe = b.addExecutable(.{
+    //     .name = "one",
+    //     .root_module = one_mod,
+    // });
 
-    b.installArtifact(one_exe);
+    // b.installArtifact(one_exe);
 
-    const one_run_step = b.step("one", "Run one example");
+    // const one_run_step = b.step("one", "Run one example");
 
-    const one_run_cmd = b.addRunArtifact(one_exe);
-    one_run_step.dependOn(&one_run_cmd.step);
+    // const one_run_cmd = b.addRunArtifact(one_exe);
+    // one_run_step.dependOn(&one_run_cmd.step);
 
-    one_run_cmd.step.dependOn(b.getInstallStep());
+    // one_run_cmd.step.dependOn(b.getInstallStep());
 
     const monte_exe = b.addExecutable(.{
         .name = "monte",

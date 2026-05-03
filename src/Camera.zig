@@ -8,6 +8,7 @@ const Interval = @import("Interval.zig");
 const platform = @import("platform");
 const util = @import("util.zig");
 const mat = @import("material.zig");
+const pdf = @import("pdf.zig");
 
 const Camera = @This();
 
@@ -76,7 +77,7 @@ pub fn deinit(self: *Camera) void {
     self.allocator.destroy(self);
 }
 
-pub fn render(self: *Camera, world: *const hit.Hittable) !void {
+pub fn render(self: *Camera, world: *const hit.Hittable, lights: *const hit.Hittable) !void {
     self.initialize();
 
     var out_buffer: [1 << 8]u8 = undefined;
@@ -100,7 +101,7 @@ pub fn render(self: *Camera, world: *const hit.Hittable) !void {
             for (0..self.sqrt_samples_per_pixel) |s_j| {
                 for (0..self.sqrt_samples_per_pixel) |s_i| {
                     const r = self.getRay(i, j, s_i, s_j);
-                    pixel_color = pixel_color.add(self.rayColor(r, self.max_depth, world));
+                    pixel_color = pixel_color.add(self.rayColor(r, self.max_depth, world, lights));
                 }
             }
 
@@ -164,7 +165,7 @@ fn initialize(self: *Camera) void {
     self.defocus_disk_v = self.v.mul(defocus_radius);
 }
 
-fn rayColor(self: *Camera, ray: Ray, depth: u32, world: *const hit.Hittable) Vec3 {
+fn rayColor(self: *Camera, ray: Ray, depth: u32, world: *const hit.Hittable, lights: *const hit.Hittable) Vec3 {
     // If we've exceeded the ray bounce limit, no more light is gathered.
     if (depth <= 0) return Vec3.zero;
     var rec: hit.Record = undefined;
@@ -174,24 +175,22 @@ fn rayColor(self: *Camera, ray: Ray, depth: u32, world: *const hit.Hittable) Vec
         return self.background_color;
     }
 
-    var scattered: Ray = undefined;
-    var attenuation: Vec3 = undefined;
-    var pdf_value: f64 = 0;
+    var srec: mat.ScatterRecord = undefined;
     const color_from_emission = rec.material.emit(rec, rec.u, rec.v, rec.point);
-    if (!rec.material.scatter(ray, rec, &attenuation, &scattered, &pdf_value)) return color_from_emission;
+    if (!rec.material.scatterRecord(ray, rec, &srec)) return color_from_emission;
+    if (srec.skip_pdf) {
+        return srec.attenuation.mulV(self.rayColor(srec.skip_pdf_ray, depth - 1, world, lights));
+    }
 
-    const on_light = Vec3.init(util.randomInRange(213, 343), 554, util.randomInRange(227, 332));
-    var to_light = on_light.sub(rec.point);
-    const distance_squared = to_light.lengthSquared();
-    to_light = to_light.unit();
-    if (to_light.dot(rec.normal) < 0) return color_from_emission;
-    const light_area = (343.0 - 213.0) * (332.0 - 227.0);
-    const light_cosine = @abs(to_light.y());
-    if (light_cosine < 0.000001) return color_from_emission;
-    pdf_value = distance_squared / (light_cosine * light_area);
-    scattered = Ray.initWithTime(rec.point, to_light, ray.time);
+    const light_pdf = pdf.Hit.init(lights, rec.point);
+    const mixed_pdf = pdf.Mixture.init(&light_pdf.pdf, srec.pdf_ptr.?);
+
+    var scattered = Ray.initWithTime(rec.point, (&mixed_pdf.pdf).generate(), ray.time);
+    const pdf_value = (&mixed_pdf.pdf).value(scattered.direction);
+
     const scattering_pdf = rec.material.scatteringPdf(ray, rec, &scattered);
-    const color_from_scatter = (attenuation.mul(scattering_pdf).mulV(self.rayColor(scattered, depth - 1, world))).div(pdf_value);
+    const sample_color = self.rayColor(scattered, depth - 1, world, lights);
+    const color_from_scatter = (srec.attenuation.mul(scattering_pdf).mulV(sample_color)).div(pdf_value);
 
     return color_from_emission.add(color_from_scatter);
 }
