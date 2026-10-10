@@ -66,7 +66,7 @@ fn Buffer(comptime max_capacity: usize) type {
     return struct {
         const Self = @This();
 
-        buffer: [max_capacity]u8 = [_]u8{0} ** max_capacity,
+        buffer: [max_capacity]u8 = @splat(0),
         read_index: usize = 0,
         write_index: usize = 0,
 
@@ -514,7 +514,7 @@ pub const Connection = struct {
         try self.writeInt(ObjectID, object);
         try self.writeInt(u32, @as(u32, @intCast(msg_size)) << 16 | @as(u16, message_id));
 
-        const padding = [_]u8{0} ** 4;
+        const padding: [4]u8 = @splat(0);
         const args_info = @typeInfo(@TypeOf(args)).@"struct".fields;
         inline for (args_info, 0..) |field, i| {
             switch (field.type) {

@@ -4,25 +4,22 @@ const builtin = @import("builtin");
 pub const util = @import("util.zig");
 
 pub const PlatformName = enum(u8) {
-    android = 0,
-    linux = 1,
-    windows = 2,
-    macos = 3,
+    linux,
+    windows,
+    macos,
 };
 
 pub const name: PlatformName = switch (builtin.os.tag) {
-    .linux => if (builtin.abi == .android) .android else .linux,
+    .linux => .linux,
     .windows => .windows,
     .macos => .macos,
     else => @compileError("unsupported platform"),
 };
 
-pub const android = @import("android.zig");
 pub const linux = @import("linux.zig");
 pub const windows = @import("windows.zig");
 pub const macos = @import("macos.zig");
 pub const platform = switch (name) {
-    .android => android,
     .linux => linux,
     .windows => windows,
     .macos => macos,
@@ -38,19 +35,11 @@ pub const LogLevel = enum(u8) {
 };
 
 pub fn log(level: LogLevel, comptime fmt: [:0]const u8, args: anytype) void {
+    _ = level;
     const msg: [:0]u8 = std.fmt.allocPrintZ(util.gpa, fmt, args) catch {
         return;
     };
     switch (name) {
-        .android => {
-            const android_level = switch (level) {
-                .ERROR => platform.c.ANDROID_LOG_ERROR,
-                .WARNING => platform.c.ANDROID_LOG_WARN,
-                .INFO => platform.c.ANDROID_LOG_INFO,
-                .DEBUG => platform.c.ANDROID_LOG_DEBUG,
-            };
-            _ = platform.c.__android_log_print(android_level, "zig-android", msg.ptr);
-        },
         .linux => std.debug.print("{s}\n", .{msg}),
         .windows => std.debug.print("{s}\n", .{msg}),
         .macos => std.debug.print("{s}\n", .{msg}),
@@ -75,7 +64,6 @@ pub const Context = struct {
         const self = try util.gpa.create(Self);
         errdefer util.gpa.destroy(self);
         self.* = switch (name) {
-            .android => @compileError("not implemented"),
             .linux => try platform.createContext(),
             .windows => try platform.Context.create(),
             .macos => try platform.createContext(),

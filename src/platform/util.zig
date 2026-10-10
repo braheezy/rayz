@@ -6,7 +6,7 @@ pub const io = threaded.io();
 
 pub var gpa: std.mem.Allocator = undefined;
 
-pub const debug = builtin.mode == .Debug;
+pub const debug = builtin.mode == .debug;
 
 pub fn assert(condition: bool) void {
     // while the assert could be empty in release mode, the condition might
@@ -18,7 +18,7 @@ pub fn assert(condition: bool) void {
 pub fn assertMsg(condition: bool, msg: []const u8) void {
     if (!debug) @compileError("assert not allowed in release mode");
     if (!condition) {
-        var buf = [_]u8{0} ** 128;
+        var buf: [128]u8 = @splat(0);
         const msg2 = std.fmt.bufPrint(&buf, "assertion failed: {s}", .{msg}) catch "assertion failed";
         @panic(msg2);
     }

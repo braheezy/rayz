@@ -17,7 +17,7 @@ pub fn build(b: *std.Build) void {
     const monte_mod = b.createModule(.{
         .root_source_file = b.path("src/monte.zig"),
         .target = target,
-        .optimize = .ReleaseSafe,
+        .optimize = optimize,
     });
     const target_os = target.result.os.tag;
 
@@ -64,20 +64,6 @@ pub fn build(b: *std.Build) void {
     basic_run_step.dependOn(&basic_run_cmd.step);
 
     basic_run_cmd.step.dependOn(b.getInstallStep());
-
-    // const one_exe = b.addExecutable(.{
-    //     .name = "one",
-    //     .root_module = one_mod,
-    // });
-
-    // b.installArtifact(one_exe);
-
-    // const one_run_step = b.step("one", "Run one example");
-
-    // const one_run_cmd = b.addRunArtifact(one_exe);
-    // one_run_step.dependOn(&one_run_cmd.step);
-
-    // one_run_cmd.step.dependOn(b.getInstallStep());
 
     const monte_exe = b.addExecutable(.{
         .name = "monte",

@@ -14,7 +14,7 @@ var rand: std.Random = undefined;
 var prng: std.Random.DefaultPrng = undefined;
 
 pub fn main(init: std.process.Init) !void {
-    const al = init.gpa;
+    const al = init.arena.allocator();
     util.init(init.io);
 
     var camera = try Camera.init(al, init.io);
@@ -54,9 +54,9 @@ pub fn main(init: std.process.Init) !void {
     try lights.add(al, &(try Sphere.init(al, Vec3.init(190, 90, 190), 90, &light.material)).hittable);
 
     camera.aspect_ratio = 1.0;
-    camera.image_width = 600;
-    camera.samples_per_pixel = 1000;
-    camera.max_depth = 50;
+    camera.image_width = 200;
+    camera.samples_per_pixel = 10;
+    camera.max_depth = 10;
     camera.vfov = 40;
     camera.look_from = Vec3.init(278, 278, -800);
     camera.look_at = Vec3.init(278, 278, 0);

@@ -481,7 +481,7 @@ pub const Window = struct {
                 for (0..event_handling_level) |_| {
                     std.debug.print("  ", .{});
                 }
-                var buf = [_]u8{0} ** 6;
+                var buf: [6]u8 = @splat(0);
                 const msg_str = win32.msgToStr(msg, &buf);
                 std.debug.print("-> {s}\n", .{msg_str});
                 event_handling_level += 1;
@@ -496,7 +496,7 @@ pub const Window = struct {
                 for (0..event_handling_level - 1) |_| {
                     std.debug.print("  ", .{});
                 }
-                var buf = [_]u8{0} ** 6;
+                var buf: [6]u8 = @splat(0);
                 const msg_str = win32.msgToStr(msg, &buf);
                 std.debug.print("<- {s} - {d}\n", .{ msg_str, delta_time });
             }
@@ -644,7 +644,7 @@ pub const Window = struct {
                 if (wParam <= std.math.maxInt(u8) and std.ascii.isControl(@intCast(wParam))) {
                     return 0;
                 }
-                var utf8 = [_]u8{0} ** 4;
+                var utf8: [4]u8 = @splat(0);
                 _ = std.unicode.utf16LeToUtf8(&utf8, (&@as(u16, @intCast(wParam)))[0..1]) catch {
                     // TODO
                     @panic("surrogate pairs currently not supported");
@@ -1003,7 +1003,7 @@ fn toUtf16Runtime(s: []const u8, buf: []u16) ![:0]u16 {
 fn toUtf16(comptime s: []const u8) [std.unicode.calcUtf16LeLen(s) catch unreachable:0]u16 {
     return @bitCast(comptime blk: {
         const len = std.unicode.calcUtf16LeLen(s) catch unreachable;
-        var buf = [_]u16{0} ** (len + 1);
+        var buf: [len + 1]u16 = @splat(0);
         _ = std.unicode.utf8ToUtf16Le(buf[0..len], s) catch unreachable;
         break :blk buf;
     });

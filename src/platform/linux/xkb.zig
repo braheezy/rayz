@@ -16,7 +16,7 @@ pub const Keymap = struct {
     pub fn create(string: []const u8) !*Self {
         const self = try util.gpa.create(Self);
         self.* = .{
-            .modifier_map = [_]platform.Modifiers{.{}} ** 8,
+            .modifier_map = @splat(.{}),
         };
         errdefer self.destroy();
         if (debug_output) std.debug.print("{s}\n", .{string});
@@ -174,7 +174,7 @@ pub const Keymap = struct {
             },
             .codepoint => |cp| cp,
         };
-        var buf = [_]u8{0} ** 4;
+        var buf: [4]u8 = @splat(0);
         _ = std.unicode.utf8Encode(codepoint, &buf) catch unreachable;
         return .utf8(buf);
     }

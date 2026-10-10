@@ -6,12 +6,12 @@
     .fingerprint = 0xe74a4c81c0f3eee5,
     .dependencies = .{
         .zig_objc = .{
-            .url = "git+https://github.com/mitchellh/zig-objc#c8de82ff80281215ad92900866dab7103a8efa8b",
-            .hash = "zig_objc-0.0.0-Ir_Sp9gsAQCPAJc0oF5xoWePHWP6Y6tCphDeyNUThJoi",
+            .url = "git+https://github.com/loftafi/zig-objc#3352c12a868f8787ab71bf2ca6eab9fcfb635c52",
+            .hash = "zig_objc-0.0.0-Ir_Sp_4tAQDXtPi51nW_jD9LOEzBvU9lofwO9Pzi6IB4",
         },
         .zigimg = .{
-            .url = "git+https://github.com/zigimg/zigimg#c7e81a13bff1cf4c5b7f085a8360f9d551143d40",
-            .hash = "zigimg-0.1.0-8_eo2uScFwCnpzB1Y2n_jf3euDfMEeCLxJE_E5_W5BNe",
+            .url = "git+https://github.com/zigimg/zigimg#734fa919fb15b7917d4eb124f53600348f4ffa30",
+            .hash = "zigimg-0.1.0-8_eo2sBLGACBebrhQZUwRliZNSUyDn6szp99eip_6-Rw",
         },
     },
 }
