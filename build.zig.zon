@@ -1,7 +1,7 @@
 .{
     .name = .rayz,
-    .version = "0.0.1",
-    .minimum_zig_version = "0.15.2",
+    .version = "0.1.0",
+    .minimum_zig_version = "0.17.0",
     .paths = .{"src"},
     .fingerprint = 0xe74a4c81c0f3eee5,
     .dependencies = .{
